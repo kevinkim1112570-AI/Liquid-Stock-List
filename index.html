@@ -1,0 +1,491 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Liquid StockList</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+  /* Layout: one column of brand groups. Each group is a header row (brand, totals, actions) above a responsive grid of stock cards. */
+  :root {
+    --bg: #ECEDE9;
+    --surface: #F7F7F4;
+    --ink: #22262A;
+    --muted: #646A71;
+    --line: #D8DAD4;
+    --chip: #E2E4DE;
+    --accent: #D24C06;
+    --on-accent: #FFFFFF;
+    --display: 'Bricolage Grotesque', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --body: 'Figtree', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #17191B; --surface: #212427; --ink: #ECEDEA; --muted: #9EA3A9;
+      --line: #32363A; --chip: #2C3033; --accent: #FF7A33; --on-accent: #1A1C1E;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #17191B; --surface: #212427; --ink: #ECEDEA; --muted: #9EA3A9;
+    --line: #32363A; --chip: #2C3033; --accent: #FF7A33; --on-accent: #1A1C1E;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--ink);
+    font-family: var(--body); font-size: 17px; line-height: 1.5;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 28px 64px;
+  }
+  .wrap { max-width: 1040px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+  /* Header */
+  .top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px 24px; }
+  h1 { font-family: var(--display); font-weight: 700; font-size: clamp(2rem, 6vw, 2.75rem); line-height: 1.05; margin: 0; letter-spacing: -0.02em; text-wrap: balance; }
+  .totals { margin: 6px 0 0; color: var(--muted); font-size: 1.05rem; font-variant-numeric: tabular-nums; }
+  .btn {
+    border: 1.5px solid var(--line); background: var(--surface); border-radius: 10px;
+    padding: 12px 20px; font-weight: 600; min-height: 48px;
+  }
+  .btn:hover { border-color: var(--muted); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+  .btn.primary:hover { filter: brightness(0.95); }
+
+  /* Toolbar */
+  .toolbar { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 220px); gap: 12px; }
+  .field {
+    width: 100%; min-height: 48px; padding: 10px 14px; border-radius: 10px;
+    border: 1.5px solid var(--line); background: var(--surface);
+  }
+  .field::placeholder { color: var(--muted); }
+  textarea.field { min-height: 88px; resize: vertical; }
+
+  /* Sample notice */
+  .notice {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px;
+    padding: 12px 16px; border-radius: 10px; background: var(--chip); color: var(--muted);
+  }
+  .linkbtn { background: none; border: 0; padding: 6px 4px; font-weight: 600; color: var(--ink); text-decoration: underline; text-underline-offset: 3px; min-height: 36px; }
+  .linkbtn:hover { color: var(--accent); }
+
+  /* Groups */
+  .groups { display: flex; flex-direction: column; gap: 36px; }
+  .group-head {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 20px;
+    padding-bottom: 12px; border-bottom: 2px solid var(--ink); margin-bottom: 16px;
+  }
+  .brand { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 14px; min-width: 0; }
+  .brand h2 { font-family: var(--display); font-weight: 700; font-size: 1.75rem; line-height: 1.1; margin: 0; letter-spacing: -0.01em; overflow-wrap: anywhere; }
+  .meta { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
+  .actions .add-to { color: var(--accent); font-weight: 700; }
+  .rename { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .rename .field { min-height: 44px; width: min(320px, 100%); font-family: var(--display); font-weight: 700; font-size: 1.25rem; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 290px), 1fr)); gap: 16px; }
+  .card {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+    padding: 20px; display: flex; flex-direction: column; gap: 14px; min-width: 0;
+  }
+  .card-top { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 8px 12px; }
+  .card h3 { margin: 0; font-size: 1.3rem; line-height: 1.25; font-weight: 700; min-width: 0; overflow-wrap: anywhere; }
+  .chip { background: var(--chip); border-radius: 999px; padding: 3px 12px; font-size: 0.9rem; font-weight: 600; color: var(--ink); white-space: normal; }
+  .detail { margin: 0; color: var(--muted); overflow-wrap: anywhere; }
+  .place { margin: 0; display: grid; gap: 2px; }
+  .place dt { font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+  .place dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+  .card-bottom { margin-top: auto; padding-top: 14px; border-top: 1px solid var(--line); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+  .stepper { display: flex; align-items: center; gap: 6px; }
+  .stepper button {
+    width: 44px; height: 44px; border-radius: 10px; border: 1.5px solid var(--line);
+    background: var(--bg); font-size: 1.4rem; line-height: 1; font-weight: 600;
+  }
+  .stepper button:hover { border-color: var(--accent); color: var(--accent); }
+  .stepper output { min-width: 3.2ch; text-align: center; font-family: var(--display); font-weight: 700; font-size: 1.7rem; font-variant-numeric: tabular-nums; }
+  .stepper .unit { color: var(--muted); font-size: 0.9rem; margin-left: 4px; }
+  .links { display: flex; align-items: center; gap: 2px; flex-wrap: wrap; }
+  .confirm { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; font-weight: 600; }
+  .confirm .yes { color: var(--accent); }
+
+  .empty { text-align: center; padding: 56px 16px; border: 2px dashed var(--line); border-radius: 14px; color: var(--muted); display: flex; flex-direction: column; align-items: center; gap: 16px; }
+  .empty p { margin: 0; font-size: 1.1rem; }
+
+  /* Form sheet */
+  .overlay {
+    position: fixed; inset: 0; z-index: 20; background: rgba(20, 22, 24, 0.55);
+    display: flex; align-items: flex-start; justify-content: center; overflow-y: auto;
+    padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+  }
+  .sheet {
+    background: var(--surface); border-radius: 16px; width: min(560px, 100%); margin: auto;
+    padding: 24px; display: flex; flex-direction: column; gap: 16px; border: 1px solid var(--line);
+  }
+  .sheet h2 { margin: 0; font-family: var(--display); font-size: 1.6rem; }
+  .row2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+  label { display: flex; flex-direction: column; gap: 6px; font-weight: 600; min-width: 0; }
+  label .hint { font-weight: 400; color: var(--muted); font-size: 0.9rem; }
+  .err { margin: 0; color: var(--accent); font-weight: 600; min-height: 0; }
+  .sheet-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; }
+
+  .toast {
+    position: fixed; left: 50%; transform: translateX(-50%);
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px)); z-index: 30;
+    background: var(--ink); color: var(--bg); padding: 12px 20px; border-radius: 999px; font-weight: 600;
+    max-width: calc(100% - 32px);
+  }
+
+  @media (max-width: 560px) {
+    .toolbar { grid-template-columns: minmax(0, 1fr); }
+    .row2 { grid-template-columns: minmax(0, 1fr); }
+    .top .btn.primary { width: 100%; }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .card { transition: border-color .15s ease; }
+    .card:hover { border-color: var(--muted); }
+  }
+</style>
+
+<style>
+  :root { color-scheme: light; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  body { margin: 0; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Liquid StockList</h1>
+      <p class="totals" id="totals"></p>
+    </div>
+    <button class="btn primary" type="button" data-action="add">+ Add liquid</button>
+  </header>
+
+  <div class="toolbar">
+    <input class="field" id="q" type="search" placeholder="Search brand, model, place, detail" aria-label="Search stock">
+    <select class="field" id="tf" aria-label="Filter by type of liquid"></select>
+  </div>
+
+  <div id="notice"></div>
+  <main class="groups" id="groups"></main>
+</div>
+
+<div class="overlay" id="overlay" hidden>
+  <form class="sheet" id="form" novalidate>
+    <h2 id="form-title">Add liquid</h2>
+    <label for="f-brand">Liquid brand
+      <input class="field" id="f-brand" list="dl-brands" autocomplete="off" placeholder="e.g. Castrol">
+    </label>
+    <div class="row2">
+      <label for="f-model">Model
+        <input class="field" id="f-model" autocomplete="off" placeholder="e.g. Edge 5W-30">
+      </label>
+      <label for="f-type">Type of liquid
+        <input class="field" id="f-type" list="dl-types" autocomplete="off" placeholder="e.g. Engine oil">
+      </label>
+    </div>
+    <label for="f-detail">Detail <span class="hint">Optional. Size, grade, batch, notes.</span>
+      <textarea class="field" id="f-detail" placeholder="e.g. 4 L bottle, fully synthetic"></textarea>
+    </label>
+    <div class="row2">
+      <label for="f-place">Stock place
+        <input class="field" id="f-place" list="dl-places" autocomplete="off" placeholder="e.g. Warehouse A, Shelf 2">
+      </label>
+      <label for="f-qty">Quantity
+        <input class="field" id="f-qty" type="number" min="0" step="1" inputmode="numeric" placeholder="0">
+      </label>
+    </div>
+    <p class="err" id="form-err" role="alert"></p>
+    <div class="sheet-actions">
+      <button class="btn" type="button" data-action="modal-close">Cancel</button>
+      <button class="btn primary" type="submit" id="f-save">Save</button>
+    </div>
+  </form>
+</div>
+
+<datalist id="dl-brands"></datalist>
+<datalist id="dl-types"></datalist>
+<datalist id="dl-places"></datalist>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script>
+(function () {
+  var KEY = 'liquid-stocklist-v1';
+  var DEFAULT_TYPES = ['Engine oil', 'Coolant', 'Brake fluid', 'Transmission fluid', 'Hydraulic oil', 'Grease', 'Cleaning solvent', 'Paint thinner'];
+
+  var items = load();
+  var collapsed = {};
+  var renamingKey = null;
+  var confirmBrand = null;
+  var confirmItem = null;
+  var editingId = null;
+  var presetBrand = '';
+  var toastTimer = null;
+
+  function $(s) { return document.querySelector(s); }
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+  function keyOf(b) { return String(b).trim().toLowerCase(); }
+
+  function seed() {
+    var mk = function (brand, model, type, detail, place, qty) {
+      return { id: uid(), brand: brand, model: model, type: type, detail: detail, place: place, qty: qty, sample: true };
+    };
+    return [
+      mk('Castrol', 'Edge 5W-30', 'Engine oil', '4 L bottle, fully synthetic', 'Warehouse A, Shelf 2', 24),
+      mk('Castrol', 'GTX 15W-40', 'Engine oil', '20 L pail, mineral', 'Warehouse A, Shelf 3', 6),
+      mk('Shell', 'Helix Ultra 0W-20', 'Engine oil', '1 L bottle, carton of 12', 'Warehouse B, Rack 1', 18),
+      mk('Shell', 'Tellus S2 M 46', 'Hydraulic oil', '209 L drum', 'Yard Store', 3),
+      mk('Prestone', 'Extended Life 50/50', 'Coolant', 'Pre-mixed, 3.78 L', 'Warehouse B, Rack 4', 15),
+      mk('Bosch', 'DOT 4 Brake Fluid', 'Brake fluid', '500 ml bottle', 'Showroom Cabinet', 9)
+    ];
+  }
+  function load() {
+    try {
+      var raw = localStorage.getItem(KEY);
+      if (raw !== null) {
+        var d = JSON.parse(raw);
+        if (Array.isArray(d)) return d;
+      }
+    } catch (e) {}
+    return seed();
+  }
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(items)); } catch (e) {}
+  }
+  function toast(msg) {
+    var t = $('#toast');
+    t.textContent = msg; t.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.hidden = true; }, 2200);
+  }
+
+  function fillLists() {
+    var brands = {}, types = {}, places = {};
+    DEFAULT_TYPES.forEach(function (t) { types[t] = 1; });
+    items.forEach(function (i) { brands[i.brand] = 1; types[i.type] = 1; places[i.place] = 1; });
+    var opt = function (o) { return Object.keys(o).sort().map(function (v) { return '<option value="' + esc(v) + '"></option>'; }).join(''); };
+    $('#dl-brands').innerHTML = opt(brands);
+    $('#dl-types').innerHTML = opt(types);
+    $('#dl-places').innerHTML = opt(places);
+
+    var tf = $('#tf'), cur = tf.value;
+    var usedTypes = {};
+    items.forEach(function (i) { usedTypes[i.type] = 1; });
+    var names = Object.keys(usedTypes).sort();
+    tf.innerHTML = '<option value="">All types</option>' + names.map(function (n) {
+      return '<option value="' + esc(n) + '">' + esc(n) + '</option>';
+    }).join('');
+    tf.value = names.indexOf(cur) >= 0 ? cur : '';
+  }
+
+  function render() {
+    fillLists();
+    var q = $('#q').value.trim().toLowerCase();
+    var tf = $('#tf').value;
+    var filtered = items.filter(function (i) {
+      if (tf && i.type !== tf) return false;
+      if (!q) return true;
+      return [i.brand, i.model, i.type, i.detail, i.place].join(' ').toLowerCase().indexOf(q) >= 0;
+    });
+
+    var brandSet = {}; items.forEach(function (i) { brandSet[keyOf(i.brand)] = 1; });
+    var totalQty = items.reduce(function (s, i) { return s + (Number(i.qty) || 0); }, 0);
+    $('#totals').textContent = Object.keys(brandSet).length + ' brands · ' + items.length + ' models · ' + totalQty + ' units in stock';
+
+    var hasSample = items.some(function (i) { return i.sample; });
+    $('#notice').innerHTML = hasSample
+      ? '<div class="notice"><span>These are example entries. Replace them with your own stock.</span><button class="linkbtn" type="button" data-action="clear-samples">Remove examples</button></div>'
+      : '';
+
+    var host = $('#groups');
+    if (!items.length) {
+      host.innerHTML = '<div class="empty"><p>No liquids listed yet. Add your first brand and model.</p><button class="btn primary" type="button" data-action="add">+ Add liquid</button></div>';
+      return;
+    }
+    if (!filtered.length) {
+      host.innerHTML = '<div class="empty"><p>Nothing matches your search.</p></div>';
+      return;
+    }
+
+    var groups = {};
+    filtered.forEach(function (i) {
+      var k = keyOf(i.brand);
+      if (!groups[k]) groups[k] = { key: k, name: i.brand, list: [] };
+      groups[k].list.push(i);
+    });
+    var ordered = Object.keys(groups).sort().map(function (k) { return groups[k]; });
+
+    host.innerHTML = ordered.map(function (g) {
+      var qty = g.list.reduce(function (s, i) { return s + (Number(i.qty) || 0); }, 0);
+      var isCollapsed = !!collapsed[g.key];
+      var head;
+      if (renamingKey === g.key) {
+        head = '<div class="rename"><input class="field" id="rename-input" value="' + esc(g.name) + '" aria-label="Brand name">' +
+          '<button class="btn primary" type="button" data-action="rename-save" data-key="' + esc(g.key) + '">Save</button>' +
+          '<button class="btn" type="button" data-action="rename-cancel">Cancel</button></div>';
+      } else {
+        head = '<div class="brand"><h2>' + esc(g.name) + '</h2><span class="meta">' + g.list.length + (g.list.length === 1 ? ' model' : ' models') + ' · ' + qty + ' units</span></div>';
+      }
+      var actions;
+      if (confirmBrand === g.key) {
+        actions = '<div class="confirm">Delete ' + esc(g.name) + ' and ' + g.list.length + (g.list.length === 1 ? ' model?' : ' models?') +
+          '<button class="linkbtn yes" type="button" data-action="brand-del-yes" data-key="' + esc(g.key) + '">Yes, delete</button>' +
+          '<button class="linkbtn" type="button" data-action="brand-del-no">Keep</button></div>';
+      } else {
+        actions = '<button class="linkbtn add-to" type="button" data-action="add-to" data-brand="' + esc(g.name) + '">+ Add model</button>' +
+          '<button class="linkbtn" type="button" data-action="brand-rename" data-key="' + esc(g.key) + '">Rename</button>' +
+          '<button class="linkbtn" type="button" data-action="brand-del-ask" data-key="' + esc(g.key) + '">Delete brand</button>' +
+          '<button class="linkbtn" type="button" data-action="brand-toggle" data-key="' + esc(g.key) + '" aria-expanded="' + (!isCollapsed) + '">' + (isCollapsed ? 'Show' : 'Hide') + '</button>';
+      }
+      var cards = isCollapsed ? '' : '<div class="grid">' + g.list.sort(function (a, b) { return a.model.localeCompare(b.model); }).map(cardHtml).join('') + '</div>';
+      return '<section aria-label="' + esc(g.name) + '"><div class="group-head">' + head + '<div class="actions">' + actions + '</div></div>' + cards + '</section>';
+    }).join('');
+
+    var ri = $('#rename-input');
+    if (ri) { ri.focus(); ri.select(); }
+  }
+
+  function cardHtml(i) {
+    var del = confirmItem === i.id
+      ? '<div class="confirm">Delete?<button class="linkbtn yes" type="button" data-action="del-yes" data-id="' + i.id + '">Yes</button><button class="linkbtn" type="button" data-action="del-no">No</button></div>'
+      : '<button class="linkbtn" type="button" data-action="edit" data-id="' + i.id + '">Edit</button><button class="linkbtn" type="button" data-action="del-ask" data-id="' + i.id + '">Delete</button>';
+    return '<article class="card">' +
+      '<div class="card-top"><h3>' + esc(i.model) + '</h3><span class="chip">' + esc(i.type) + '</span></div>' +
+      (i.detail ? '<p class="detail">' + esc(i.detail) + '</p>' : '') +
+      '<dl class="place"><dt>Stock place</dt><dd>' + esc(i.place) + '</dd></dl>' +
+      '<div class="card-bottom">' +
+        '<div class="stepper"><button type="button" aria-label="Remove one from ' + esc(i.model) + '" data-action="dec" data-id="' + i.id + '">−</button>' +
+        '<output>' + (Number(i.qty) || 0) + '</output>' +
+        '<button type="button" aria-label="Add one to ' + esc(i.model) + '" data-action="inc" data-id="' + i.id + '">+</button><span class="unit">in stock</span></div>' +
+        '<div class="links">' + del + '</div>' +
+      '</div></article>';
+  }
+
+  function find(id) { for (var n = 0; n < items.length; n++) if (items[n].id === id) return items[n]; return null; }
+
+  function openForm(item, brand) {
+    editingId = item ? item.id : null;
+    $('#form-title').textContent = item ? 'Edit liquid' : (brand ? 'Add model to ' + brand : 'Add liquid');
+    $('#f-brand').value = item ? item.brand : (brand || '');
+    $('#f-model').value = item ? item.model : '';
+    $('#f-type').value = item ? item.type : '';
+    $('#f-detail').value = item ? item.detail : '';
+    $('#f-place').value = item ? item.place : '';
+    $('#f-qty').value = item ? item.qty : '';
+    $('#form-err').textContent = '';
+    $('#overlay').hidden = false;
+    fillLists();
+    (brand && !item ? $('#f-model') : $('#f-brand')).focus();
+  }
+  function closeForm() { $('#overlay').hidden = true; editingId = null; }
+
+  $('#form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var brand = $('#f-brand').value.trim();
+    var model = $('#f-model').value.trim();
+    var type = $('#f-type').value.trim();
+    var detail = $('#f-detail').value.trim();
+    var place = $('#f-place').value.trim();
+    var qtyRaw = $('#f-qty').value.trim();
+    var qty = Number(qtyRaw);
+    var err = '';
+    if (!brand) err = 'Enter the liquid brand.';
+    else if (!model) err = 'Enter the model.';
+    else if (!type) err = 'Enter the type of liquid.';
+    else if (!place) err = 'Enter where it is stocked.';
+    else if (qtyRaw === '' || !isFinite(qty) || qty < 0 || Math.floor(qty) !== qty) err = 'Quantity must be a whole number, 0 or more.';
+    if (err) { $('#form-err').textContent = err; return; }
+
+    // Keep one spelling per brand: reuse the existing name if only the case differs.
+    var existing = items.filter(function (i) { return keyOf(i.brand) === keyOf(brand) && i.id !== editingId; })[0];
+    if (existing) brand = existing.brand;
+
+    if (editingId) {
+      var it = find(editingId);
+      it.brand = brand; it.model = model; it.type = type; it.detail = detail; it.place = place; it.qty = qty;
+      delete it.sample;
+      toast('Saved changes to ' + model);
+    } else {
+      items.push({ id: uid(), brand: brand, model: model, type: type, detail: detail, place: place, qty: qty });
+      toast('Added ' + model + ' to ' + brand);
+    }
+    save(); closeForm(); render();
+  });
+
+  $('#overlay').addEventListener('mousedown', function (e) { if (e.target === this) closeForm(); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && !$('#overlay').hidden) closeForm();
+  });
+  $('#q').addEventListener('input', render);
+  $('#tf').addEventListener('change', render);
+
+  document.addEventListener('click', function (e) {
+    var el = e.target.closest('[data-action]');
+    if (!el) return;
+    var a = el.getAttribute('data-action');
+    var id = el.getAttribute('data-id');
+    var key = el.getAttribute('data-key');
+    var it;
+
+    if (a === 'add') openForm(null, '');
+    else if (a === 'add-to') openForm(null, el.getAttribute('data-brand'));
+    else if (a === 'modal-close') closeForm();
+    else if (a === 'edit') openForm(find(id), '');
+    else if (a === 'inc' || a === 'dec') {
+      it = find(id);
+      it.qty = Math.max(0, (Number(it.qty) || 0) + (a === 'inc' ? 1 : -1));
+      delete it.sample;
+      save(); render();
+    }
+    else if (a === 'del-ask') { confirmItem = id; render(); }
+    else if (a === 'del-no') { confirmItem = null; render(); }
+    else if (a === 'del-yes') {
+      it = find(id);
+      items = items.filter(function (i) { return i.id !== id; });
+      confirmItem = null; save(); render(); toast('Deleted ' + (it ? it.model : 'item'));
+    }
+    else if (a === 'brand-toggle') { collapsed[key] = !collapsed[key]; render(); }
+    else if (a === 'brand-rename') { renamingKey = key; confirmBrand = null; render(); }
+    else if (a === 'rename-cancel') { renamingKey = null; render(); }
+    else if (a === 'rename-save') {
+      var nv = $('#rename-input').value.trim();
+      if (!nv) return;
+      items.forEach(function (i) { if (keyOf(i.brand) === key) { i.brand = nv; delete i.sample; } });
+      renamingKey = null; save(); render(); toast('Renamed brand to ' + nv);
+    }
+    else if (a === 'brand-del-ask') { confirmBrand = key; render(); }
+    else if (a === 'brand-del-no') { confirmBrand = null; render(); }
+    else if (a === 'brand-del-yes') {
+      items = items.filter(function (i) { return keyOf(i.brand) !== key; });
+      confirmBrand = null; save(); render(); toast('Brand deleted');
+    }
+    else if (a === 'clear-samples') {
+      items = items.filter(function (i) { return !i.sample; });
+      save(); render(); toast('Examples removed');
+    }
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && e.target && e.target.id === 'rename-input') {
+      var b = document.querySelector('[data-action="rename-save"]'); if (b) b.click();
+    }
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>

@@ -148,6 +148,11 @@
     .top-right { width: 100%; }
     .top .btn.primary { flex: 1 1 100%; }
   }
+  .specs { margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .specs dt { font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+  .specs dd { margin: 2px 0 0; font-weight: 600; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+  .btn.small { min-height: 44px; padding: 8px 16px; align-self: flex-start; text-decoration: none; color: var(--ink); display: inline-flex; align-items: center; gap: 6px; }
+  .btn.small:hover { border-color: var(--accent); color: var(--accent); }
   .top-right { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
   .userbar { display: flex; align-items: center; gap: 6px; color: var(--muted); min-width: 0; }
   .user-email { overflow-wrap: anywhere; font-size: 0.95rem; }
@@ -231,8 +236,19 @@
         <input class="field" id="f-type" list="dl-types" autocomplete="off" placeholder="e.g. Engine oil">
       </label>
     </div>
+    <div class="row2">
+      <label for="f-capacity">Capacity <span class="hint">Optional</span>
+        <input class="field" id="f-capacity" autocomplete="off" placeholder="e.g. 700 ml">
+      </label>
+      <label for="f-abv">ABV % <span class="hint">Alcohol by volume, optional</span>
+        <input class="field" id="f-abv" type="number" min="0" max="100" step="0.1" inputmode="decimal" placeholder="e.g. 40">
+      </label>
+    </div>
     <label for="f-detail">Detail <span class="hint">Optional. Size, grade, batch, notes.</span>
       <textarea class="field" id="f-detail" placeholder="e.g. 4 L bottle, fully synthetic"></textarea>
+    </label>
+    <label for="f-image">Picture link <span class="hint">Optional. A web address starting with https://</span>
+      <input class="field" id="f-image" type="url" inputmode="url" autocomplete="off" placeholder="https://example.com/bottle.jpg">
     </label>
     <div class="row2">
       <label for="f-place">Stock place
@@ -291,8 +307,13 @@
   var toastTimer = null;
 
   function fromRow(r) {
-    return { id: r.id, brand: r.brand, model: r.model, type: r.liquid_type, detail: r.detail || '', place: r.stock_place, qty: r.quantity, sample: r.is_sample };
+    return { id: r.id, brand: r.brand, model: r.model, type: r.liquid_type, detail: r.detail || '', capacity: r.capacity || '', abv: r.abv, image: r.image_url || '', place: r.stock_place, qty: r.quantity, sample: r.is_sample };
   }
+  function safeUrl(u) {
+    try { var x = new URL(String(u).trim()); return (x.protocol === 'https:' || x.protocol === 'http:') ? x.href : ''; }
+    catch (e) { return ''; }
+  }
+  function abvText(v) { return v === null || v === undefined || v === '' ? '' : (Number(v) + '%'); }
   function find(id) { for (var n = 0; n < items.length; n++) if (items[n].id === id) return items[n]; return null; }
 
   function toast(msg) {
@@ -435,7 +456,7 @@
     var filtered = items.filter(function (i) {
       if (tf && i.type !== tf) return false;
       if (!q) return true;
-      return [i.brand, i.model, i.type, i.detail, i.place].join(' ').toLowerCase().indexOf(q) >= 0;
+      return [i.brand, i.model, i.type, i.detail, i.place, i.capacity, abvText(i.abv)].join(' ').toLowerCase().indexOf(q) >= 0;
     });
 
     if (!items.length) {
@@ -492,7 +513,9 @@
     return '<article class="card">' +
       '<div class="card-top"><h3>' + esc(i.model) + '</h3><span class="chip">' + esc(i.type) + '</span></div>' +
       (i.detail ? '<p class="detail">' + esc(i.detail) + '</p>' : '') +
+      ((i.capacity || abvText(i.abv)) ? '<dl class="specs"><div><dt>Capacity</dt><dd>' + (esc(i.capacity) || '\u2014') + '</dd></div><div><dt>ABV</dt><dd>' + (abvText(i.abv) || '\u2014') + '</dd></div></dl>' : '') +
       '<dl class="place"><dt>Stock place</dt><dd>' + esc(i.place) + '</dd></dl>' +
+      (safeUrl(i.image) ? '<a class="btn small" href="' + esc(safeUrl(i.image)) + '" target="_blank" rel="noopener noreferrer">View picture \u2197</a>' : '') +
       '<div class="card-bottom">' +
         '<div class="stepper"><button type="button" aria-label="Remove one from ' + esc(i.model) + '" data-action="dec" data-id="' + i.id + '">−</button>' +
         '<output>' + (Number(i.qty) || 0) + '</output>' +
@@ -509,6 +532,9 @@
     $('#f-range').value = item ? item.model : '';
     $('#f-type').value = item ? item.type : '';
     $('#f-detail').value = item ? item.detail : '';
+    $('#f-capacity').value = item ? item.capacity : '';
+    $('#f-abv').value = item && item.abv !== null && item.abv !== undefined ? item.abv : '';
+    $('#f-image').value = item ? item.image : '';
     $('#f-place').value = item ? item.place : '';
     $('#f-qty').value = item ? item.qty : '';
     $('#form-err').textContent = '';
@@ -525,6 +551,10 @@
     var type = $('#f-type').value.trim();
     var detail = $('#f-detail').value.trim();
     var place = $('#f-place').value.trim();
+    var capacity = $('#f-capacity').value.trim();
+    var abvRaw = $('#f-abv').value.trim();
+    var abv = abvRaw === '' ? null : Number(abvRaw);
+    var image = $('#f-image').value.trim();
     var qtyRaw = $('#f-qty').value.trim();
     var qty = Number(qtyRaw);
     var err = '';
@@ -533,13 +563,15 @@
     else if (!type) err = 'Enter the type of liquid.';
     else if (!place) err = 'Enter where it is stocked.';
     else if (qtyRaw === '' || !isFinite(qty) || qty < 0 || Math.floor(qty) !== qty) err = 'Quantity must be a whole number, 0 or more.';
+    if (!err && abv !== null && (!isFinite(abv) || abv < 0 || abv > 100)) err = 'ABV must be a number from 0 to 100.';
+    if (!err && image && !safeUrl(image)) err = 'Enter a picture link that starts with http:// or https://.';
     if (err) { $('#form-err').textContent = err; return; }
 
     // Keep one spelling per brand: reuse the existing name if only the case differs.
     var existing = items.filter(function (i) { return keyOf(i.brand) === keyOf(brand) && i.id !== editingId; })[0];
     if (existing) brand = existing.brand;
 
-    var row = { brand: brand, model: model, liquid_type: type, detail: detail, stock_place: place, quantity: qty };
+    var row = { brand: brand, model: model, liquid_type: type, detail: detail, stock_place: place, quantity: qty, capacity: capacity, abv: abv, image_url: image ? safeUrl(image) : '' };
     var req, msg;
     if (editingId) {
       row.is_sample = false;

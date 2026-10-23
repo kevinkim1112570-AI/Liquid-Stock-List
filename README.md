@@ -6,7 +6,7 @@ Each entry stores: Liquid Brand, Range, Type of Liquid, Capacity, ABV (alcohol b
 
 ## Features
 
-- Add a liquid with brand, range, type, detail, place and quantity. Save stays disabled until brand, range, type and quantity are filled in
+- Add a liquid with brand, range, type, detail, place and quantity. Save stays disabled until brand, range, type and quantity are filled in, or when the brand already has that range
 - Cards grouped by brand, with per-brand actions: add range, rename, delete brand, hide
 - Quantity stepper (+ / −) on every card, edit and delete per entry
 - Search and filter by type of liquid

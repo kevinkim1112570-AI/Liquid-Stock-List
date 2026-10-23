@@ -266,6 +266,7 @@
         <input class="field" id="f-qty" type="number" min="0" step="1" inputmode="numeric" placeholder="0">
       </label>
     </div>
+    <p class="err" id="form-dup" role="alert"></p>
     <p class="err" id="form-err" role="alert"></p>
     <div class="sheet-actions">
       <button class="btn" type="button" data-action="modal-close">Cancel</button>
@@ -358,7 +359,10 @@
   // Runs a write. On failure, shows the reason and reloads the true state from the database.
   function write(promise, okMsg) {
     return promise.then(function (res) {
-      if (res.error) { toast('Not saved: ' + res.error.message); fetchAll(true); return false; }
+      if (res.error) {
+        toast(res.error.code === '23505' ? 'Not saved: that range already exists under this brand.' : 'Not saved: ' + res.error.message);
+        fetchAll(true); return false;
+      }
       if (okMsg) toast(okMsg);
       return true;
     });
@@ -562,7 +566,19 @@
     return $('#f-brand').value.trim() !== '' && $('#f-range').value.trim() !== '' && $('#f-type').value.trim() !== '' &&
       q !== '' && isFinite(n) && n >= 0 && Math.floor(n) === n;
   }
-  function updateSave() { $('#f-save').disabled = saving || !formComplete(); }
+  function findDuplicate() {
+    var b = keyOf($('#f-brand').value), r = keyOf($('#f-range').value);
+    if (!b || !r) return null;
+    for (var n = 0; n < items.length; n++) {
+      if (items[n].id !== editingId && keyOf(items[n].brand) === b && keyOf(items[n].model) === r) return items[n];
+    }
+    return null;
+  }
+  function updateSave() {
+    var d = findDuplicate();
+    $('#form-dup').textContent = d ? 'The range \u201C' + d.model + '\u201D already exists under ' + d.brand + '. Change the range name, or edit the existing one.' : '';
+    $('#f-save').disabled = saving || !formComplete() || !!d;
+  }
   var saving = false;
   $('#form').addEventListener('input', updateSave);
   $('#form').addEventListener('change', updateSave);
@@ -590,6 +606,8 @@
     if (!err && image && !safeUrl(image)) err = 'Enter a picture link that starts with http:// or https://.';
     if (err) { $('#form-err').textContent = err; return; }
 
+    var dup = findDuplicate();
+    if (dup) { updateSave(); return; }
     // Keep one spelling per brand: reuse the existing name if only the case differs.
     var existing = items.filter(function (i) { return keyOf(i.brand) === keyOf(brand) && i.id !== editingId; })[0];
     if (existing) brand = existing.brand;

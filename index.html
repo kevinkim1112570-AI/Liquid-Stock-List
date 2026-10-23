@@ -197,7 +197,7 @@
         <span id="user-email" class="user-email"></span>
         <button class="linkbtn" type="button" data-action="signout">Sign out</button>
       </div>
-      <button class="btn primary" type="button" data-action="add">+ Add Liquor</button>
+      <button class="btn primary" type="button" data-action="add">+ Add New</button>
     </div>
   </header>
 
@@ -491,7 +491,7 @@
     });
 
     if (!items.length) {
-      host.innerHTML = '<div class="empty"><p>No liquids listed yet. Add your first brand and range.</p><button class="btn primary" type="button" data-action="add">+ Add Liquor</button></div>';
+      host.innerHTML = '<div class="empty"><p>No liquids listed yet. Add your first brand and range.</p><button class="btn primary" type="button" data-action="add">+ Add New</button></div>';
       return;
     }
     if (!filtered.length) {

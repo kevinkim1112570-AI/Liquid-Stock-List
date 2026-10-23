@@ -2,11 +2,11 @@
 
 A single-page app for listing all liquid stock, grouped by brand.
 
-Each entry stores: Spirit Brand, Expression, Categories, Capacity, ABV (alcohol by volume), Detail, Picture link, Stock Place, Note and Quantity.
+Each entry stores: Spirit Brand, Expression, Category, Capacity, ABV (alcohol by volume), Detail, Picture link, Stock Place, Note and Quantity.
 
 ## Features
 
-- Add a liquid with brand, expression, categories, detail, place and quantity. Save stays disabled until brand, expression, categories and quantity are filled in, or when the brand already has that expression
+- Add a liquid with brand, expression, category, detail, place and quantity. Save stays disabled until brand, expression, category and quantity are filled in, or when the brand already has that expression
 - Cards grouped by brand, with per-brand actions: add expression, rename, delete brand, hide
 - Quantity stepper (+ / −) on every card, edit and delete per entry
 - Search and filter by category
@@ -36,7 +36,7 @@ Open `index.html` in a browser. No build step or dependencies.
 ## Supabase
 
 - Project: `gxbhnrovgtiylqsukshm`
-- Table: `public.liquid_stock` (brand, model, liquid_type (shown as Categories), capacity, abv, detail, image_url, note, stock_place, quantity, is_sample)
+- Table: `public.liquid_stock` (brand, model, liquid_type (shown as Category), capacity, abv, detail, image_url, note, stock_place, quantity, is_sample)
 - Row Level Security is on. Only signed-in users can read, add, edit or delete rows.
 - The publishable key in `index.html` is safe to expose. Access is controlled by the policies above.
 

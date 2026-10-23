@@ -148,7 +148,8 @@
     .top-right { width: 100%; }
     .top .btn.primary { flex: 1 1 100%; }
   }
-  .specs { margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .specs { margin: 0; display: grid; grid-template-columns: auto auto minmax(0, 1fr); gap: 12px 24px; }
+  .specs.solo { grid-template-columns: minmax(0, 1fr); }
   .specs dt { font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
   .specs dd { margin: 2px 0 0; font-weight: 600; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
   .btn.small { min-height: 44px; padding: 8px 16px; align-self: flex-start; text-decoration: none; color: var(--ink); display: inline-flex; align-items: center; gap: 6px; }
@@ -251,7 +252,7 @@
       <input class="field" id="f-image" type="url" inputmode="url" autocomplete="off" placeholder="https://example.com/bottle.jpg">
     </label>
     <div class="row2">
-      <label for="f-place">Stock place
+      <label for="f-place">Place
         <input class="field" id="f-place" list="dl-places" autocomplete="off" placeholder="e.g. Warehouse A, Shelf 2">
       </label>
       <label for="f-qty">Quantity
@@ -513,8 +514,9 @@
     return '<article class="card">' +
       '<div class="card-top"><h3>' + esc(i.model) + '</h3><span class="chip">' + esc(i.type) + '</span></div>' +
       (i.detail ? '<p class="detail">' + esc(i.detail) + '</p>' : '') +
-      ((i.capacity || abvText(i.abv)) ? '<dl class="specs"><div><dt>Capacity</dt><dd>' + (esc(i.capacity) || '\u2014') + '</dd></div><div><dt>ABV</dt><dd>' + (abvText(i.abv) || '\u2014') + '</dd></div></dl>' : '') +
-      '<dl class="place"><dt>Stock place</dt><dd>' + esc(i.place) + '</dd></dl>' +
+      '<dl class="specs' + ((i.capacity || abvText(i.abv)) ? '' : ' solo') + '">' +
+        ((i.capacity || abvText(i.abv)) ? '<div><dt>Capacity</dt><dd>' + (esc(i.capacity) || '\u2014') + '</dd></div><div><dt>ABV</dt><dd>' + (abvText(i.abv) || '\u2014') + '</dd></div>' : '') +
+        '<div><dt>Place</dt><dd>' + esc(i.place) + '</dd></div></dl>' +
       (safeUrl(i.image) ? '<a class="btn small" href="' + esc(safeUrl(i.image)) + '" target="_blank" rel="noopener noreferrer">View picture \u2197</a>' : '') +
       '<div class="card-bottom">' +
         '<div class="stepper"><button type="button" aria-label="Remove one from ' + esc(i.model) + '" data-action="dec" data-id="' + i.id + '">−</button>' +

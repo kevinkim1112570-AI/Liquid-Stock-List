@@ -110,6 +110,9 @@
   }
   .stepper button:hover { border-color: var(--accent); color: var(--accent); }
   .stepper output { min-width: 3.2ch; text-align: center; font-family: var(--display); font-weight: 700; font-size: 1.7rem; font-variant-numeric: tabular-nums; }
+  .note-box { flex: 1 1 100px; min-width: 100px; min-height: 64px; resize: vertical; padding: 8px 12px; border-radius: 10px; border: 1.5px solid var(--line); background: var(--bg); font-size: 0.95rem; line-height: 1.4; }
+  .note-box::placeholder { color: var(--muted); }
+  .card-bottom .links { flex: 0 0 100%; }
   .stepper .unit { color: var(--muted); font-size: 0.9rem; margin-left: 4px; }
   .links { display: flex; align-items: center; gap: 2px; flex-wrap: wrap; }
   .confirm { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; font-weight: 600; }
@@ -311,7 +314,7 @@
   var toastTimer = null;
 
   function fromRow(r) {
-    return { id: r.id, brand: r.brand, model: r.model, type: r.liquid_type, detail: r.detail || '', capacity: r.capacity || '', abv: r.abv, image: r.image_url || '', place: r.stock_place, qty: r.quantity, sample: r.is_sample };
+    return { id: r.id, brand: r.brand, model: r.model, type: r.liquid_type, detail: r.detail || '', capacity: r.capacity || '', abv: r.abv, image: r.image_url || '', note: r.note || '', place: r.stock_place, qty: r.quantity, sample: r.is_sample };
   }
   function safeUrl(u) {
     try { var x = new URL(String(u).trim()); return (x.protocol === 'https:' || x.protocol === 'http:') ? x.href : ''; }
@@ -434,8 +437,12 @@
     tf.value = names.indexOf(cur) >= 0 ? cur : '';
   }
 
+  var renderPending = false;
   function render() {
     if (!session) return;
+    var ae = document.activeElement;
+    if (ae && ae.classList && ae.classList.contains('note-box')) { renderPending = true; return; }
+    renderPending = false;
     fillLists();
     var host = $('#groups');
 
@@ -460,7 +467,7 @@
     var filtered = items.filter(function (i) {
       if (tf && i.type !== tf) return false;
       if (!q) return true;
-      return [i.brand, i.model, i.type, i.detail, i.place, i.capacity, abvText(i.abv)].join(' ').toLowerCase().indexOf(q) >= 0;
+      return [i.brand, i.model, i.type, i.detail, i.place, i.capacity, abvText(i.abv), i.note].join(' ').toLowerCase().indexOf(q) >= 0;
     });
 
     if (!items.length) {
@@ -525,7 +532,8 @@
       '<div class="card-bottom">' +
         '<div class="stepper"><button type="button" aria-label="Remove one from ' + esc(i.model) + '" data-action="dec" data-id="' + i.id + '">−</button>' +
         '<output>' + (Number(i.qty) || 0) + '</output>' +
-        '<button type="button" aria-label="Add one to ' + esc(i.model) + '" data-action="inc" data-id="' + i.id + '">+</button><span class="unit">in stock</span></div>' +
+        '<button type="button" aria-label="Add one to ' + esc(i.model) + '" data-action="inc" data-id="' + i.id + '">+</button></div>' +
+        '<textarea class="note-box" rows="2" maxlength="500" placeholder="Note" aria-label="Note for ' + esc(i.model) + '" data-id="' + i.id + '">' + esc(i.note) + '</textarea>' +
         '<div class="links">' + del + '</div>' +
       '</div></article>';
   }
@@ -603,6 +611,23 @@
   });
   $('#q').addEventListener('input', render);
   $('#tf').addEventListener('change', render);
+
+  /* ---------- Notes ---------- */
+  document.addEventListener('change', function (e) {
+    var t = e.target;
+    if (!t.classList || !t.classList.contains('note-box')) return;
+    var it = find(t.getAttribute('data-id'));
+    if (!it) return;
+    var v = t.value.trim();
+    if (v === it.note) return;
+    it.note = v; it.sample = false;
+    write(sb.from('liquid_stock').update({ note: v, is_sample: false }).eq('id', it.id), 'Note saved');
+  });
+  document.addEventListener('focusout', function (e) {
+    if (e.target.classList && e.target.classList.contains('note-box') && renderPending) {
+      setTimeout(function () { if (renderPending) render(); }, 0);
+    }
+  });
 
   /* ---------- Actions ---------- */
   document.addEventListener('click', function (e) {

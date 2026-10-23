@@ -1,13 +1,13 @@
-# Liquid StockList
+# Liquid Stock List
 
 A single-page app for listing all liquid stock, grouped by brand.
 
-Each entry stores: Liquid Brand, Model, Type of Liquid, Detail, Stock Place and Quantity.
+Each entry stores: Liquid Brand, Range, Type of Liquid, Detail, Stock Place and Quantity.
 
 ## Features
 
-- Add a liquid with brand, model, type, detail, stock place and quantity
-- Cards grouped by brand, with per-brand actions: add model, rename, delete brand, hide
+- Add a liquid with brand, range, type, detail, stock place and quantity
+- Cards grouped by brand, with per-brand actions: add range, rename, delete brand, hide
 - Quantity stepper (+ / −) on every card, edit and delete per entry
 - Search and filter by type of liquid
 - Live data in Supabase (table `public.liquid_stock`), shared by the whole team and updated in real time

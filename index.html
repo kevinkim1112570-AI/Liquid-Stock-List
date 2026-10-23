@@ -167,6 +167,7 @@
   .auth { display: flex; justify-content: center; padding-top: 12px; }
   .authcard { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 28px; width: min(460px, 100%); display: flex; flex-direction: column; gap: 16px; }
   .authcard h2 { margin: 0; font-family: var(--display); font-size: 1.6rem; line-height: 1.15; }
+  .req { font-weight: 500; font-size: 0.85rem; color: var(--accent); }
   .hint { margin: 0; font-weight: 400; color: var(--muted); font-size: 0.95rem; }
   .info { margin: 0; color: var(--ink); font-weight: 600; }
   .info:empty, .err:empty { display: none; }
@@ -232,14 +233,14 @@
 <div class="overlay" id="overlay" hidden>
   <form class="sheet" id="form" novalidate>
     <h2 id="form-title">Add liquid</h2>
-    <label for="f-brand">Liquid brand
+    <label for="f-brand">Liquid brand <span class="req">required</span>
       <input class="field" id="f-brand" list="dl-brands" autocomplete="off" placeholder="e.g. Castrol">
     </label>
     <div class="row2">
-      <label for="f-range">Range
+      <label for="f-range">Range <span class="req">required</span>
         <input class="field" id="f-range" autocomplete="off" placeholder="e.g. Edge 5W-30">
       </label>
-      <label for="f-type">Type of liquid
+      <label for="f-type">Type of liquid <span class="req">required</span>
         <input class="field" id="f-type" list="dl-types" autocomplete="off" placeholder="e.g. Engine oil">
       </label>
     </div>
@@ -258,10 +259,10 @@
       <input class="field" id="f-image" type="url" inputmode="url" autocomplete="off" placeholder="https://example.com/bottle.jpg">
     </label>
     <div class="row2">
-      <label for="f-place">Place
+      <label for="f-place">Place <span class="hint">Optional</span>
         <input class="field" id="f-place" list="dl-places" autocomplete="off" placeholder="e.g. Warehouse A, Shelf 2">
       </label>
-      <label for="f-qty">Quantity
+      <label for="f-qty">Quantity <span class="req">required</span>
         <input class="field" id="f-qty" type="number" min="0" step="1" inputmode="numeric" placeholder="0">
       </label>
     </div>
@@ -525,7 +526,7 @@
       '<div class="card-top"><h3>' + esc(i.model) + '</h3><span class="chip">' + esc(i.type) + '</span></div>' +
       '<dl class="specs' + ((i.capacity || abvText(i.abv)) ? '' : ' solo') + (safeUrl(i.image) ? ' haspic' : '') + '">' +
         ((i.capacity || abvText(i.abv)) ? '<div><dt>Capacity</dt><dd>' + (esc(i.capacity) || '\u2014') + '</dd></div><div><dt>ABV</dt><dd>' + (abvText(i.abv) || '\u2014') + '</dd></div>' : '') +
-        '<div class="place-cell"><dt>Place</dt><dd>' + esc(i.place) + '</dd></div>' +
+        '<div class="place-cell"><dt>Place</dt><dd>' + (esc(i.place) || '\u2014') + '</dd></div>' +
         (safeUrl(i.image) ? '<div class="pic-cell"><a class="btn pic" href="' + esc(safeUrl(i.image)) + '" target="_blank" rel="noopener noreferrer" aria-label="View picture of ' + esc(i.model) + '">pic</a></div>' : '') +
         '</dl>' +
       (i.detail ? '<p class="detail">' + esc(i.detail) + '</p>' : '') +
@@ -552,10 +553,19 @@
     $('#f-place').value = item ? item.place : '';
     $('#f-qty').value = item ? item.qty : '';
     $('#form-err').textContent = '';
-    $('#f-save').disabled = false;
+    saving = false; updateSave();
     $('#overlay').hidden = false;
     (brand && !item ? $('#f-range') : $('#f-brand')).focus();
   }
+  function formComplete() {
+    var q = $('#f-qty').value.trim(), n = Number(q);
+    return $('#f-brand').value.trim() !== '' && $('#f-range').value.trim() !== '' && $('#f-type').value.trim() !== '' &&
+      q !== '' && isFinite(n) && n >= 0 && Math.floor(n) === n;
+  }
+  function updateSave() { $('#f-save').disabled = saving || !formComplete(); }
+  var saving = false;
+  $('#form').addEventListener('input', updateSave);
+  $('#form').addEventListener('change', updateSave);
   function closeForm() { $('#overlay').hidden = true; editingId = null; }
 
   $('#form').addEventListener('submit', function (e) {
@@ -575,7 +585,6 @@
     if (!brand) err = 'Enter the liquid brand.';
     else if (!model) err = 'Enter the range.';
     else if (!type) err = 'Enter the type of liquid.';
-    else if (!place) err = 'Enter where it is stocked.';
     else if (qtyRaw === '' || !isFinite(qty) || qty < 0 || Math.floor(qty) !== qty) err = 'Quantity must be a whole number, 0 or more.';
     if (!err && abv !== null && (!isFinite(abv) || abv < 0 || abv > 100)) err = 'ABV must be a number from 0 to 100.';
     if (!err && image && !safeUrl(image)) err = 'Enter a picture link that starts with http:// or https://.';
@@ -595,10 +604,11 @@
       req = sb.from('liquid_stock').insert(row);
       msg = 'Added ' + model + ' to ' + brand;
     }
-    $('#f-save').disabled = true;
+    saving = true; updateSave();
     write(req, msg).then(function (ok) {
+      saving = false; updateSave();
       if (ok) { closeForm(); fetchAll(true); }
-      else { $('#f-save').disabled = false; $('#form-err').textContent = 'Could not save. Check your connection and try again.'; }
+      else { $('#form-err').textContent = 'Could not save. Check your connection and try again.'; }
     });
   });
 

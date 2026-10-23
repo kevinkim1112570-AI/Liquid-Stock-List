@@ -145,8 +145,20 @@
   @media (max-width: 560px) {
     .toolbar { grid-template-columns: minmax(0, 1fr); }
     .row2 { grid-template-columns: minmax(0, 1fr); }
-    .top .btn.primary { width: 100%; }
+    .top-right { width: 100%; }
+    .top .btn.primary { flex: 1 1 100%; }
   }
+  .top-right { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
+  .userbar { display: flex; align-items: center; gap: 6px; color: var(--muted); min-width: 0; }
+  .user-email { overflow-wrap: anywhere; font-size: 0.95rem; }
+  #app { display: flex; flex-direction: column; gap: 28px; }
+  .auth { display: flex; justify-content: center; padding-top: 12px; }
+  .authcard { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 28px; width: min(460px, 100%); display: flex; flex-direction: column; gap: 16px; }
+  .authcard h2 { margin: 0; font-family: var(--display); font-size: 1.6rem; line-height: 1.15; }
+  .hint { margin: 0; font-weight: 400; color: var(--muted); font-size: 0.95rem; }
+  .info { margin: 0; color: var(--ink); font-weight: 600; }
+  .info:empty, .err:empty { display: none; }
+  .btn:disabled { opacity: 0.6; cursor: not-allowed; }
   @media (prefers-reduced-motion: no-preference) {
     .card { transition: border-color .15s ease; }
     .card:hover { border-color: var(--muted); }
@@ -166,9 +178,35 @@
       <h1>Liquid StockList</h1>
       <p class="totals" id="totals"></p>
     </div>
-    <button class="btn primary" type="button" data-action="add">+ Add liquid</button>
+    <div class="top-right">
+      <div class="userbar" id="userbar" hidden>
+        <span id="user-email" class="user-email"></span>
+        <button class="linkbtn" type="button" data-action="signout">Sign out</button>
+      </div>
+      <button class="btn primary" type="button" data-action="add">+ Add liquid</button>
+    </div>
   </header>
 
+  <section class="auth" id="auth" hidden>
+    <form class="authcard" id="auth-form" novalidate>
+      <h2>Sign in to your team stock list</h2>
+      <p class="hint">Use your team email. New here? Create an account with the same fields.</p>
+      <label for="a-email">Email
+        <input class="field" id="a-email" type="email" autocomplete="email" placeholder="name@company.com">
+      </label>
+      <label for="a-pass">Password <span class="hint">6 or more characters</span>
+        <input class="field" id="a-pass" type="password" autocomplete="current-password">
+      </label>
+      <p class="err" id="auth-err" role="alert"></p>
+      <p class="info" id="auth-info" role="status"></p>
+      <div class="sheet-actions">
+        <button class="btn" type="button" id="btn-signup">Create account</button>
+        <button class="btn primary" type="submit" id="btn-signin">Sign in</button>
+      </div>
+    </form>
+  </section>
+
+  <div id="app" hidden>
   <div class="toolbar">
     <input class="field" id="q" type="search" placeholder="Search brand, model, place, detail" aria-label="Search stock">
     <select class="field" id="tf" aria-label="Filter by type of liquid"></select>
@@ -176,6 +214,7 @@
 
   <div id="notice"></div>
   <main class="groups" id="groups"></main>
+  </div>
 </div>
 
 <div class="overlay" id="overlay" hidden>
@@ -216,19 +255,12 @@
 <datalist id="dl-places"></datalist>
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script>
 (function () {
-  var KEY = 'liquid-stocklist-v1';
+  var SUPABASE_URL = 'https://gxbhnrovgtiylqsukshm.supabase.co';
+  var SUPABASE_KEY = 'sb_publishable_XbUUGZiSK3Se4QaC54JE2g_eKxVrcvs';
   var DEFAULT_TYPES = ['Engine oil', 'Coolant', 'Brake fluid', 'Transmission fluid', 'Hydraulic oil', 'Grease', 'Cleaning solvent', 'Paint thinner'];
-
-  var items = load();
-  var collapsed = {};
-  var renamingKey = null;
-  var confirmBrand = null;
-  var confirmItem = null;
-  var editingId = null;
-  var presetBrand = '';
-  var toastTimer = null;
 
   function $(s) { return document.querySelector(s); }
   function esc(s) {
@@ -236,42 +268,128 @@
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
     });
   }
-  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
   function keyOf(b) { return String(b).trim().toLowerCase(); }
 
-  function seed() {
-    var mk = function (brand, model, type, detail, place, qty) {
-      return { id: uid(), brand: brand, model: model, type: type, detail: detail, place: place, qty: qty, sample: true };
-    };
-    return [
-      mk('Castrol', 'Edge 5W-30', 'Engine oil', '4 L bottle, fully synthetic', 'Warehouse A, Shelf 2', 24),
-      mk('Castrol', 'GTX 15W-40', 'Engine oil', '20 L pail, mineral', 'Warehouse A, Shelf 3', 6),
-      mk('Shell', 'Helix Ultra 0W-20', 'Engine oil', '1 L bottle, carton of 12', 'Warehouse B, Rack 1', 18),
-      mk('Shell', 'Tellus S2 M 46', 'Hydraulic oil', '209 L drum', 'Yard Store', 3),
-      mk('Prestone', 'Extended Life 50/50', 'Coolant', 'Pre-mixed, 3.78 L', 'Warehouse B, Rack 4', 15),
-      mk('Bosch', 'DOT 4 Brake Fluid', 'Brake fluid', '500 ml bottle', 'Showroom Cabinet', 9)
-    ];
+  if (!window.supabase) {
+    $('#auth').hidden = false;
+    $('#auth-err').textContent = 'Could not load the database library. Check your connection and reload.';
+    return;
   }
-  function load() {
-    try {
-      var raw = localStorage.getItem(KEY);
-      if (raw !== null) {
-        var d = JSON.parse(raw);
-        if (Array.isArray(d)) return d;
-      }
-    } catch (e) {}
-    return seed();
+  var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  var items = [];
+  var session = null;
+  var loading = false;
+  var loadError = '';
+  var channel = null;
+  var refetchTimer = null;
+  var collapsed = {};
+  var renamingKey = null;
+  var confirmBrand = null;
+  var confirmItem = null;
+  var editingId = null;
+  var toastTimer = null;
+
+  function fromRow(r) {
+    return { id: r.id, brand: r.brand, model: r.model, type: r.liquid_type, detail: r.detail || '', place: r.stock_place, qty: r.quantity, sample: r.is_sample };
   }
-  function save() {
-    try { localStorage.setItem(KEY, JSON.stringify(items)); } catch (e) {}
-  }
+  function find(id) { for (var n = 0; n < items.length; n++) if (items[n].id === id) return items[n]; return null; }
+
   function toast(msg) {
     var t = $('#toast');
     t.textContent = msg; t.hidden = false;
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(function () { t.hidden = true; }, 2200);
+    toastTimer = setTimeout(function () { t.hidden = true; }, 2600);
   }
 
+  /* ---------- Data ---------- */
+  function fetchAll(quiet) {
+    if (!session) return;
+    if (!quiet) { loading = true; loadError = ''; render(); }
+    sb.from('liquid_stock').select('*').order('brand', { ascending: true }).then(function (res) {
+      loading = false;
+      if (res.error) { loadError = res.error.message; if (quiet) toast('Could not refresh: ' + res.error.message); }
+      else { loadError = ''; items = res.data.map(fromRow); }
+      render();
+    });
+  }
+  function scheduleRefetch() {
+    clearTimeout(refetchTimer);
+    refetchTimer = setTimeout(function () { fetchAll(true); }, 250);
+  }
+  function subscribe() {
+    unsubscribe();
+    channel = sb.channel('liquid_stock_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'liquid_stock' }, scheduleRefetch)
+      .subscribe();
+  }
+  function unsubscribe() {
+    if (channel) { sb.removeChannel(channel); channel = null; }
+  }
+  // Runs a write. On failure, shows the reason and reloads the true state from the database.
+  function write(promise, okMsg) {
+    return promise.then(function (res) {
+      if (res.error) { toast('Not saved: ' + res.error.message); fetchAll(true); return false; }
+      if (okMsg) toast(okMsg);
+      return true;
+    });
+  }
+
+  /* ---------- Auth ---------- */
+  function applySession() {
+    var signedIn = !!session;
+    $('#auth').hidden = signedIn;
+    $('#app').hidden = !signedIn;
+    $('#userbar').hidden = !signedIn;
+    if (signedIn) {
+      $('#user-email').textContent = session.user.email || '';
+      subscribe();
+      fetchAll();
+    } else {
+      unsubscribe();
+      items = [];
+    }
+  }
+  sb.auth.getSession().then(function (r) {
+    session = r.data.session;
+    applySession();
+  });
+  sb.auth.onAuthStateChange(function (event, s) {
+    // Defer so no database call runs inside the auth callback.
+    setTimeout(function () {
+      var changed = (!!s) !== (!!session) || (s && session && s.user.id !== session.user.id);
+      session = s;
+      if (changed) applySession();
+    }, 0);
+  });
+
+  function authBusy(b) {
+    $('#btn-signin').disabled = b; $('#btn-signup').disabled = b;
+  }
+  $('#auth-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var email = $('#a-email').value.trim(), pw = $('#a-pass').value;
+    $('#auth-err').textContent = ''; $('#auth-info').textContent = '';
+    if (!email || !pw) { $('#auth-err').textContent = 'Enter your email and password.'; return; }
+    authBusy(true);
+    sb.auth.signInWithPassword({ email: email, password: pw }).then(function (r) {
+      authBusy(false);
+      if (r.error) $('#auth-err').textContent = r.error.message;
+    });
+  });
+  $('#btn-signup').addEventListener('click', function () {
+    var email = $('#a-email').value.trim(), pw = $('#a-pass').value;
+    $('#auth-err').textContent = ''; $('#auth-info').textContent = '';
+    if (!email || pw.length < 6) { $('#auth-err').textContent = 'Enter an email and a password of 6 or more characters.'; return; }
+    authBusy(true);
+    sb.auth.signUp({ email: email, password: pw }).then(function (r) {
+      authBusy(false);
+      if (r.error) { $('#auth-err').textContent = r.error.message; return; }
+      if (!r.data.session) $('#auth-info').textContent = 'Account created. Check your email to confirm it, then sign in.';
+    });
+  });
+
+  /* ---------- Rendering ---------- */
   function fillLists() {
     var brands = {}, types = {}, places = {};
     DEFAULT_TYPES.forEach(function (t) { types[t] = 1; });
@@ -292,7 +410,26 @@
   }
 
   function render() {
+    if (!session) return;
     fillLists();
+    var host = $('#groups');
+
+    var brandSet = {}; items.forEach(function (i) { brandSet[keyOf(i.brand)] = 1; });
+    var totalQty = items.reduce(function (s, i) { return s + (Number(i.qty) || 0); }, 0);
+    $('#totals').textContent = loading ? 'Loading stock…' :
+      Object.keys(brandSet).length + ' brands · ' + items.length + ' models · ' + totalQty + ' units in stock';
+
+    var hasSample = items.some(function (i) { return i.sample; });
+    $('#notice').innerHTML = hasSample
+      ? '<div class="notice"><span>These are example entries. Replace them with your own stock.</span><button class="linkbtn" type="button" data-action="clear-samples">Remove examples</button></div>'
+      : '';
+
+    if (loading && !items.length) { host.innerHTML = '<div class="empty"><p>Loading stock…</p></div>'; return; }
+    if (loadError && !items.length) {
+      host.innerHTML = '<div class="empty"><p>Could not load stock: ' + esc(loadError) + '</p><button class="btn" type="button" data-action="retry">Try again</button></div>';
+      return;
+    }
+
     var q = $('#q').value.trim().toLowerCase();
     var tf = $('#tf').value;
     var filtered = items.filter(function (i) {
@@ -301,16 +438,6 @@
       return [i.brand, i.model, i.type, i.detail, i.place].join(' ').toLowerCase().indexOf(q) >= 0;
     });
 
-    var brandSet = {}; items.forEach(function (i) { brandSet[keyOf(i.brand)] = 1; });
-    var totalQty = items.reduce(function (s, i) { return s + (Number(i.qty) || 0); }, 0);
-    $('#totals').textContent = Object.keys(brandSet).length + ' brands · ' + items.length + ' models · ' + totalQty + ' units in stock';
-
-    var hasSample = items.some(function (i) { return i.sample; });
-    $('#notice').innerHTML = hasSample
-      ? '<div class="notice"><span>These are example entries. Replace them with your own stock.</span><button class="linkbtn" type="button" data-action="clear-samples">Remove examples</button></div>'
-      : '';
-
-    var host = $('#groups');
     if (!items.length) {
       host.innerHTML = '<div class="empty"><p>No liquids listed yet. Add your first brand and model.</p><button class="btn primary" type="button" data-action="add">+ Add liquid</button></div>';
       return;
@@ -355,7 +482,7 @@
     }).join('');
 
     var ri = $('#rename-input');
-    if (ri) { ri.focus(); ri.select(); }
+    if (ri && document.activeElement !== ri) { ri.focus(); ri.select(); }
   }
 
   function cardHtml(i) {
@@ -374,8 +501,7 @@
       '</div></article>';
   }
 
-  function find(id) { for (var n = 0; n < items.length; n++) if (items[n].id === id) return items[n]; return null; }
-
+  /* ---------- Form ---------- */
   function openForm(item, brand) {
     editingId = item ? item.id : null;
     $('#form-title').textContent = item ? 'Edit liquid' : (brand ? 'Add model to ' + brand : 'Add liquid');
@@ -386,8 +512,8 @@
     $('#f-place').value = item ? item.place : '';
     $('#f-qty').value = item ? item.qty : '';
     $('#form-err').textContent = '';
+    $('#f-save').disabled = false;
     $('#overlay').hidden = false;
-    fillLists();
     (brand && !item ? $('#f-model') : $('#f-brand')).focus();
   }
   function closeForm() { $('#overlay').hidden = true; editingId = null; }
@@ -413,49 +539,61 @@
     var existing = items.filter(function (i) { return keyOf(i.brand) === keyOf(brand) && i.id !== editingId; })[0];
     if (existing) brand = existing.brand;
 
+    var row = { brand: brand, model: model, liquid_type: type, detail: detail, stock_place: place, quantity: qty };
+    var req, msg;
     if (editingId) {
-      var it = find(editingId);
-      it.brand = brand; it.model = model; it.type = type; it.detail = detail; it.place = place; it.qty = qty;
-      delete it.sample;
-      toast('Saved changes to ' + model);
+      row.is_sample = false;
+      req = sb.from('liquid_stock').update(row).eq('id', editingId);
+      msg = 'Saved changes to ' + model;
     } else {
-      items.push({ id: uid(), brand: brand, model: model, type: type, detail: detail, place: place, qty: qty });
-      toast('Added ' + model + ' to ' + brand);
+      req = sb.from('liquid_stock').insert(row);
+      msg = 'Added ' + model + ' to ' + brand;
     }
-    save(); closeForm(); render();
+    $('#f-save').disabled = true;
+    write(req, msg).then(function (ok) {
+      if (ok) { closeForm(); fetchAll(true); }
+      else { $('#f-save').disabled = false; $('#form-err').textContent = 'Could not save. Check your connection and try again.'; }
+    });
   });
 
   $('#overlay').addEventListener('mousedown', function (e) { if (e.target === this) closeForm(); });
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape' && !$('#overlay').hidden) closeForm();
+    if (e.key === 'Enter' && e.target && e.target.id === 'rename-input') {
+      var b = document.querySelector('[data-action="rename-save"]'); if (b) b.click();
+    }
   });
   $('#q').addEventListener('input', render);
   $('#tf').addEventListener('change', render);
 
+  /* ---------- Actions ---------- */
   document.addEventListener('click', function (e) {
     var el = e.target.closest('[data-action]');
     if (!el) return;
     var a = el.getAttribute('data-action');
     var id = el.getAttribute('data-id');
     var key = el.getAttribute('data-key');
-    var it;
+    var it, ids;
 
     if (a === 'add') openForm(null, '');
     else if (a === 'add-to') openForm(null, el.getAttribute('data-brand'));
     else if (a === 'modal-close') closeForm();
+    else if (a === 'signout') sb.auth.signOut();
+    else if (a === 'retry') fetchAll();
     else if (a === 'edit') openForm(find(id), '');
     else if (a === 'inc' || a === 'dec') {
-      it = find(id);
-      it.qty = Math.max(0, (Number(it.qty) || 0) + (a === 'inc' ? 1 : -1));
-      delete it.sample;
-      save(); render();
+      it = find(id); if (!it) return;
+      var next = Math.max(0, (Number(it.qty) || 0) + (a === 'inc' ? 1 : -1));
+      it.qty = next; it.sample = false; render();
+      write(sb.from('liquid_stock').update({ quantity: next, is_sample: false }).eq('id', id));
     }
     else if (a === 'del-ask') { confirmItem = id; render(); }
     else if (a === 'del-no') { confirmItem = null; render(); }
     else if (a === 'del-yes') {
       it = find(id);
       items = items.filter(function (i) { return i.id !== id; });
-      confirmItem = null; save(); render(); toast('Deleted ' + (it ? it.model : 'item'));
+      confirmItem = null; render();
+      write(sb.from('liquid_stock').delete().eq('id', id), 'Deleted ' + (it ? it.model : 'item'));
     }
     else if (a === 'brand-toggle') { collapsed[key] = !collapsed[key]; render(); }
     else if (a === 'brand-rename') { renamingKey = key; confirmBrand = null; render(); }
@@ -463,28 +601,24 @@
     else if (a === 'rename-save') {
       var nv = $('#rename-input').value.trim();
       if (!nv) return;
-      items.forEach(function (i) { if (keyOf(i.brand) === key) { i.brand = nv; delete i.sample; } });
-      renamingKey = null; save(); render(); toast('Renamed brand to ' + nv);
+      ids = items.filter(function (i) { return keyOf(i.brand) === key; }).map(function (i) { return i.id; });
+      items.forEach(function (i) { if (keyOf(i.brand) === key) { i.brand = nv; i.sample = false; } });
+      renamingKey = null; render();
+      write(sb.from('liquid_stock').update({ brand: nv, is_sample: false }).in('id', ids), 'Renamed brand to ' + nv);
     }
     else if (a === 'brand-del-ask') { confirmBrand = key; render(); }
     else if (a === 'brand-del-no') { confirmBrand = null; render(); }
     else if (a === 'brand-del-yes') {
+      ids = items.filter(function (i) { return keyOf(i.brand) === key; }).map(function (i) { return i.id; });
       items = items.filter(function (i) { return keyOf(i.brand) !== key; });
-      confirmBrand = null; save(); render(); toast('Brand deleted');
+      confirmBrand = null; render();
+      write(sb.from('liquid_stock').delete().in('id', ids), 'Brand deleted');
     }
     else if (a === 'clear-samples') {
-      items = items.filter(function (i) { return !i.sample; });
-      save(); render(); toast('Examples removed');
+      items = items.filter(function (i) { return !i.sample; }); render();
+      write(sb.from('liquid_stock').delete().eq('is_sample', true), 'Examples removed');
     }
   });
-
-  document.addEventListener('keydown', function (e) {
-    if (e.key === 'Enter' && e.target && e.target.id === 'rename-input') {
-      var b = document.querySelector('[data-action="rename-save"]'); if (b) b.click();
-    }
-  });
-
-  render();
 })();
 </script>
 </body>

@@ -95,9 +95,10 @@
     background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
     padding: 20px; display: flex; flex-direction: column; gap: 14px; min-width: 0;
   }
-  .card-top { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 8px 12px; }
-  .card h3 { margin: 0; font-size: 1.3rem; line-height: 1.25; font-weight: 700; min-width: 0; overflow-wrap: anywhere; }
-  .chip { background: var(--chip); border-radius: 999px; padding: 3px 12px; font-size: 0.9rem; font-weight: 600; color: var(--ink); white-space: normal; }
+  .card-top { display: flex; flex-wrap: nowrap; align-items: flex-start; justify-content: space-between; gap: 8px 12px; }
+  .card h3 { margin: 0; font-size: 1.3rem; line-height: 1.25; font-weight: 700; flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+  .card h3.long { font-size: 18.5px; }
+  .chip { background: var(--chip); border-radius: 999px; padding: 3px 12px; font-size: 0.9rem; font-weight: 600; color: var(--ink); white-space: normal; flex: 0 0 auto; max-width: 45%; align-self: flex-start; }
   .detail { margin: 0; color: var(--muted); overflow-wrap: anywhere; }
   .place { margin: 0; display: grid; gap: 2px; }
   .place dt { font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
@@ -443,7 +444,21 @@
   }
 
   var renderPending = false;
-  function render() {
+  function fitTitles() {
+    var hs = document.querySelectorAll('.card h3');
+    for (var n = 0; n < hs.length; n++) {
+      var h = hs[n];
+      h.classList.remove('long');
+      h.style.whiteSpace = 'nowrap';
+      var tooLong = h.scrollWidth > h.clientWidth + 1;
+      h.style.whiteSpace = '';
+      if (tooLong) h.classList.add('long');
+    }
+  }
+  window.addEventListener('resize', fitTitles);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitTitles);
+  function render() { renderInner(); fitTitles(); }
+  function renderInner() {
     if (!session) return;
     var ae = document.activeElement;
     if (ae && ae.classList && ae.classList.contains('note-box')) { renderPending = true; return; }

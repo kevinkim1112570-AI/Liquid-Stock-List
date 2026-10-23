@@ -222,7 +222,7 @@
 
   <div id="app" hidden>
   <div class="toolbar">
-    <input class="field" id="q" type="search" placeholder="Search brand, range, place, detail" aria-label="Search stock">
+    <input class="field" id="q" type="search" placeholder="Search brand, expression, place, detail" aria-label="Search stock">
     <select class="field" id="tf" aria-label="Filter by category"></select>
   </div>
 
@@ -234,11 +234,11 @@
 <div class="overlay" id="overlay" hidden>
   <form class="sheet" id="form" novalidate>
     <h2 id="form-title">Add liquid</h2>
-    <label for="f-brand">Liquid brand <span class="req">required</span>
+    <label for="f-brand">Spirit Brand <span class="req">required</span>
       <input class="field" id="f-brand" list="dl-brands" autocomplete="off" placeholder="e.g. Castrol">
     </label>
     <div class="row2">
-      <label for="f-range">Range <span class="req">required</span>
+      <label for="f-range">Expression <span class="req">required</span>
         <input class="field" id="f-range" autocomplete="off" placeholder="e.g. Edge 5W-30">
       </label>
       <label for="f-type">Categories <span class="req">required</span>
@@ -361,7 +361,7 @@
   function write(promise, okMsg) {
     return promise.then(function (res) {
       if (res.error) {
-        toast(res.error.code === '23505' ? 'Not saved: that range already exists under this brand.' : 'Not saved: ' + res.error.message);
+        toast(res.error.code === '23505' ? 'Not saved: that expression already exists under this brand.' : 'Not saved: ' + res.error.message);
         fetchAll(true); return false;
       }
       if (okMsg) toast(okMsg);
@@ -469,7 +469,7 @@
     var brandSet = {}; items.forEach(function (i) { brandSet[keyOf(i.brand)] = 1; });
     var totalQty = items.reduce(function (s, i) { return s + (Number(i.qty) || 0); }, 0);
     $('#totals').textContent = loading ? 'Loading stock…' :
-      Object.keys(brandSet).length + ' brands · ' + items.length + ' ranges · ' + totalQty + ' units in stock';
+      (function (b, e, u) { return b + (b === 1 ? ' brand' : ' brands') + ' · ' + e + (e === 1 ? ' expression' : ' expressions') + ' · ' + u + (u === 1 ? ' unit' : ' units') + ' in stock'; })(Object.keys(brandSet).length, items.length, totalQty);
 
     var hasSample = items.some(function (i) { return i.sample; });
     $('#notice').innerHTML = hasSample
@@ -491,7 +491,7 @@
     });
 
     if (!items.length) {
-      host.innerHTML = '<div class="empty"><p>No liquids listed yet. Add your first brand and range.</p><button class="btn primary" type="button" data-action="add">+ Add New</button></div>';
+      host.innerHTML = '<div class="empty"><p>No liquids listed yet. Add your first brand and expression.</p><button class="btn primary" type="button" data-action="add">+ Add New</button></div>';
       return;
     }
     if (!filtered.length) {
@@ -516,15 +516,15 @@
           '<button class="btn primary" type="button" data-action="rename-save" data-key="' + esc(g.key) + '">Save</button>' +
           '<button class="btn" type="button" data-action="rename-cancel">Cancel</button></div>';
       } else {
-        head = '<div class="brand"><h2>' + esc(g.name) + '</h2><span class="meta">' + g.list.length + (g.list.length === 1 ? ' range' : ' ranges') + ' · ' + qty + ' units</span></div>';
+        head = '<div class="brand"><h2>' + esc(g.name) + '</h2><span class="meta">' + g.list.length + (g.list.length === 1 ? ' expression' : ' expressions') + ' · ' + qty + ' units</span></div>';
       }
       var actions;
       if (confirmBrand === g.key) {
-        actions = '<div class="confirm">Delete ' + esc(g.name) + ' and ' + g.list.length + (g.list.length === 1 ? ' range?' : ' ranges?') +
+        actions = '<div class="confirm">Delete ' + esc(g.name) + ' and ' + g.list.length + (g.list.length === 1 ? ' expression?' : ' expressions?') +
           '<button class="linkbtn yes" type="button" data-action="brand-del-yes" data-key="' + esc(g.key) + '">Yes, delete</button>' +
           '<button class="linkbtn" type="button" data-action="brand-del-no">Keep</button></div>';
       } else {
-        actions = '<button class="linkbtn add-to" type="button" data-action="add-to" data-brand="' + esc(g.name) + '">+ Add range</button>' +
+        actions = '<button class="linkbtn add-to" type="button" data-action="add-to" data-brand="' + esc(g.name) + '">+ Add expression</button>' +
           '<button class="linkbtn" type="button" data-action="brand-rename" data-key="' + esc(g.key) + '">Rename</button>' +
           '<button class="linkbtn" type="button" data-action="brand-del-ask" data-key="' + esc(g.key) + '">Delete brand</button>' +
           '<button class="linkbtn" type="button" data-action="brand-toggle" data-key="' + esc(g.key) + '" aria-expanded="' + (!isCollapsed) + '">' + (isCollapsed ? 'Show' : 'Hide') + '</button>';
@@ -561,7 +561,7 @@
   /* ---------- Form ---------- */
   function openForm(item, brand) {
     editingId = item ? item.id : null;
-    $('#form-title').textContent = item ? 'Edit liquid' : (brand ? 'Add range to ' + brand : 'Add liquid');
+    $('#form-title').textContent = item ? 'Edit liquid' : (brand ? 'Add expression to ' + brand : 'Add liquid');
     $('#f-brand').value = item ? item.brand : (brand || '');
     $('#f-range').value = item ? item.model : '';
     $('#f-type').value = item ? item.type : '';
@@ -591,7 +591,7 @@
   }
   function updateSave() {
     var d = findDuplicate();
-    $('#form-dup').textContent = d ? 'The range \u201C' + d.model + '\u201D already exists under ' + d.brand + '. Change the range name, or edit the existing one.' : '';
+    $('#form-dup').textContent = d ? 'The expression \u201C' + d.model + '\u201D already exists under ' + d.brand + '. Change the expression name, or edit the existing one.' : '';
     $('#f-save').disabled = saving || !formComplete() || !!d;
   }
   var saving = false;
@@ -613,8 +613,8 @@
     var qtyRaw = $('#f-qty').value.trim();
     var qty = Number(qtyRaw);
     var err = '';
-    if (!brand) err = 'Enter the liquid brand.';
-    else if (!model) err = 'Enter the range.';
+    if (!brand) err = 'Enter the spirit brand.';
+    else if (!model) err = 'Enter the expression.';
     else if (!type) err = 'Enter the category.';
     else if (qtyRaw === '' || !isFinite(qty) || qty < 0 || Math.floor(qty) !== qty) err = 'Quantity must be a whole number, 0 or more.';
     if (!err && abv !== null && (!isFinite(abv) || abv < 0 || abv > 100)) err = 'ABV must be a number from 0 to 100.';

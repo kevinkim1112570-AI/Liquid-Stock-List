@@ -2,12 +2,12 @@
 
 A single-page app for listing all liquid stock, grouped by brand.
 
-Each entry stores: Liquid Brand, Range, Categories, Capacity, ABV (alcohol by volume), Detail, Picture link, Stock Place, Note and Quantity.
+Each entry stores: Spirit Brand, Expression, Categories, Capacity, ABV (alcohol by volume), Detail, Picture link, Stock Place, Note and Quantity.
 
 ## Features
 
-- Add a liquid with brand, range, categories, detail, place and quantity. Save stays disabled until brand, range, categories and quantity are filled in, or when the brand already has that range
-- Cards grouped by brand, with per-brand actions: add range, rename, delete brand, hide
+- Add a liquid with brand, expression, categories, detail, place and quantity. Save stays disabled until brand, expression, categories and quantity are filled in, or when the brand already has that expression
+- Cards grouped by brand, with per-brand actions: add expression, rename, delete brand, hide
 - Quantity stepper (+ / −) on every card, edit and delete per entry
 - Search and filter by category
 - Live data in Supabase (table `public.liquid_stock`), shared by the whole team and updated in real time

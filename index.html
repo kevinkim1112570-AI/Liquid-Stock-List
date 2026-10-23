@@ -223,7 +223,7 @@
   <div id="app" hidden>
   <div class="toolbar">
     <input class="field" id="q" type="search" placeholder="Search brand, range, place, detail" aria-label="Search stock">
-    <select class="field" id="tf" aria-label="Filter by type of liquid"></select>
+    <select class="field" id="tf" aria-label="Filter by category"></select>
   </div>
 
   <div id="notice"></div>
@@ -241,7 +241,7 @@
       <label for="f-range">Range <span class="req">required</span>
         <input class="field" id="f-range" autocomplete="off" placeholder="e.g. Edge 5W-30">
       </label>
-      <label for="f-type">Type of liquid <span class="req">required</span>
+      <label for="f-type">Categories <span class="req">required</span>
         <input class="field" id="f-type" list="dl-types" autocomplete="off" placeholder="e.g. Engine oil">
       </label>
     </div>
@@ -437,7 +437,7 @@
     var usedTypes = {};
     items.forEach(function (i) { usedTypes[i.type] = 1; });
     var names = Object.keys(usedTypes).sort();
-    tf.innerHTML = '<option value="">All types</option>' + names.map(function (n) {
+    tf.innerHTML = '<option value="">All categories</option>' + names.map(function (n) {
       return '<option value="' + esc(n) + '">' + esc(n) + '</option>';
     }).join('');
     tf.value = names.indexOf(cur) >= 0 ? cur : '';
@@ -615,7 +615,7 @@
     var err = '';
     if (!brand) err = 'Enter the liquid brand.';
     else if (!model) err = 'Enter the range.';
-    else if (!type) err = 'Enter the type of liquid.';
+    else if (!type) err = 'Enter the category.';
     else if (qtyRaw === '' || !isFinite(qty) || qty < 0 || Math.floor(qty) !== qty) err = 'Quantity must be a whole number, 0 or more.';
     if (!err && abv !== null && (!isFinite(abv) || abv < 0 || abv > 100)) err = 'ABV must be a number from 0 to 100.';
     if (!err && image && !safeUrl(image)) err = 'Enter a picture link that starts with http:// or https://.';

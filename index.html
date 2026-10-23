@@ -516,10 +516,10 @@
       '<div class="card-top"><h3>' + esc(i.model) + '</h3><div class="tag-col"><span class="chip">' + esc(i.type) + '</span>' +
         (safeUrl(i.image) ? '<a class="btn pic" href="' + esc(safeUrl(i.image)) + '" target="_blank" rel="noopener noreferrer" aria-label="View picture of ' + esc(i.model) + '">pic</a>' : '') +
       '</div></div>' +
-      (i.detail ? '<p class="detail">' + esc(i.detail) + '</p>' : '') +
       '<dl class="specs' + ((i.capacity || abvText(i.abv)) ? '' : ' solo') + '">' +
         ((i.capacity || abvText(i.abv)) ? '<div><dt>Capacity</dt><dd>' + (esc(i.capacity) || '\u2014') + '</dd></div><div><dt>ABV</dt><dd>' + (abvText(i.abv) || '\u2014') + '</dd></div>' : '') +
         '<div><dt>Place</dt><dd>' + esc(i.place) + '</dd></div></dl>' +
+      (i.detail ? '<p class="detail">' + esc(i.detail) + '</p>' : '') +
       '<div class="card-bottom">' +
         '<div class="stepper"><button type="button" aria-label="Remove one from ' + esc(i.model) + '" data-action="dec" data-id="' + i.id + '">−</button>' +
         '<output>' + (Number(i.qty) || 0) + '</output>' +

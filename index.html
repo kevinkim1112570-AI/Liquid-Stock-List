@@ -152,10 +152,10 @@
     .top-right { width: 100%; }
     .top .btn.primary { flex: 1 1 100%; }
   }
-  .specs { margin: 0; display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 14px; }
+  .specs { margin: 0; display: flex; flex-wrap: nowrap; align-items: flex-end; gap: 12px; }
   .specs > div { min-width: 0; }
-  .specs > div:nth-last-child(1):not(.pic-cell), .specs > .place-cell { flex: 1 1 5rem; min-width: 5rem; }
-  .pic-cell { margin-left: auto; }
+  .specs > .place-cell { flex: 1 1 0; }
+  .pic-cell { margin-left: auto; flex: 0 0 auto; }
 
   .specs dt { font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
   .specs dd { margin: 2px 0 0; font-weight: 600; font-variant-numeric: tabular-nums; overflow-wrap: break-word; }

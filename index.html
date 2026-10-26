@@ -161,6 +161,12 @@
   .specs dd { margin: 2px 0 0; font-weight: 600; font-variant-numeric: tabular-nums; overflow-wrap: break-word; }
   .btn.pic { min-height: 36px; padding: 4px 14px; text-decoration: none; color: var(--ink); display: inline-flex; align-items: center; }
   .btn.pic:hover { border-color: var(--accent); color: var(--accent); }
+  .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 0; }
+  .stat { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .stat-label { font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; overflow-wrap: anywhere; }
+  .stat-num { font-family: var(--display); font-weight: 700; font-size: 1.9rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .stat.zero .stat-num { color: var(--muted); }
+  @media (max-width: 720px) { .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   .top-right { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
   .userbar { display: flex; align-items: center; gap: 6px; color: var(--muted); min-width: 0; }
   .user-email { overflow-wrap: anywhere; font-size: 0.95rem; }
@@ -225,6 +231,8 @@
     <input class="field" id="q" type="search" placeholder="Search brand, expression, place, detail" aria-label="Search stock">
     <select class="field" id="tf" aria-label="Filter by category"></select>
   </div>
+
+  <section class="stats" id="stats" aria-label="Stock summary"></section>
 
   <div id="notice"></div>
   <main class="groups" id="groups"></main>
@@ -444,6 +452,26 @@
   }
 
   var renderPending = false;
+  function norm(v) { return String(v == null ? '' : v).toLowerCase().replace(/[^a-z0-9]/g, ''); }
+  function renderStats() {
+    var qty = function (i) { return Number(i.qty) || 0; };
+    var sum = function (fn) { return items.reduce(function (t, i) { return fn(i) ? t + qty(i) : t; }, 0); };
+    var byCat = function (c) { return sum(function (i) { return norm(i.type) === norm(c); }); };
+    var byBrand = function (b) { return sum(function (i) { return norm(i.brand) === norm(b); }); };
+    var stats = [
+      ['Expressions', items.length],
+      ['Total units', sum(function () { return true; })],
+      ['Whisky units', byCat('Whisky')],
+      ['Brandy units', byCat('Brandy')],
+      ['D.O.M. units', sum(function (i) { return norm(i.type) === 'dom' || norm(i.brand) === 'dom'; })],
+      ['Macallan units', byBrand('Macallan')],
+      ['Martell units', byBrand('Martell')],
+      ['Hennessy units', byBrand('Hennessy')]
+    ];
+    $('#stats').innerHTML = stats.map(function (t) {
+      return '<div class="stat' + (t[1] === 0 ? ' zero' : '') + '"><span class="stat-label">' + esc(t[0]) + '</span><span class="stat-num">' + t[1] + '</span></div>';
+    }).join('');
+  }
   function fitTitles() {
     var hs = document.querySelectorAll('.card h3');
     for (var n = 0; n < hs.length; n++) {
@@ -457,7 +485,7 @@
   }
   window.addEventListener('resize', fitTitles);
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitTitles);
-  function render() { renderInner(); fitTitles(); }
+  function render() { renderInner(); renderStats(); fitTitles(); }
   function renderInner() {
     if (!session) return;
     var ae = document.activeElement;

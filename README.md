@@ -10,6 +10,7 @@ Each entry stores: Spirit Brand, Expression, Category, Capacity, ABV (alcohol by
 - Cards grouped by brand, with per-brand actions: add expression, rename, delete brand, hide
 - Quantity stepper (+ / −) on every card, edit and delete per entry
 - Search and filter by category
+- Stats area under the search bar (always shown, zeros included): expressions, total units, Whisky, Brandy, D.O.M., Macallan, Martell and Hennessy units
 - Live data in Supabase (table `public.liquid_stock`), shared by the whole team and updated in real time
 - Team sign-in with Supabase Auth (email and password)
 

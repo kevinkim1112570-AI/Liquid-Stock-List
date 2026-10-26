@@ -161,17 +161,30 @@
   .specs dd { margin: 2px 0 0; font-weight: 600; font-variant-numeric: tabular-nums; overflow-wrap: break-word; }
   .btn.pic { min-height: 36px; padding: 4px 14px; text-decoration: none; color: var(--ink); display: inline-flex; align-items: center; }
   .btn.pic:hover { border-color: var(--accent); color: var(--accent); }
-  .stats { display: grid; grid-template-columns: minmax(0, 190px) minmax(0, 260px); justify-content: space-between; gap: 12px; max-width: 640px; margin: 0; }
-  .stats-main { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
-  .stats-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; min-width: 0; }
-  .stat { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-  .stat.big { flex: 1 1 0; justify-content: center; border-radius: 12px; padding: 10px 14px; }
-  .stat-label { font-size: 0.66rem; letter-spacing: 0.03em; text-transform: uppercase; color: var(--muted); font-weight: 600; line-height: 1.2; overflow-wrap: break-word; }
+  .stats { display: flex; align-items: stretch; gap: 8px; margin: 0; }
+  .stats-main { flex: 0 0 125px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .stats-grid { flex: 0 0 240px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; min-width: 0; }
+  .stats-sep { flex: 0 0 3px; background: var(--ink); border-radius: 2px; margin: 0 4px; }
+  .stats-places { flex: 1 1 0; min-width: 0; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); grid-template-rows: repeat(4, 1fr); gap: 7px 5px; }
+  .stat { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 6px 8px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .stat.big { flex: 1 1 0; justify-content: center; border-radius: 12px; padding: 10px 12px; }
+  .stat-label { font-size: 0.62rem; letter-spacing: 0.03em; text-transform: uppercase; color: var(--muted); font-weight: 600; line-height: 1.2; overflow-wrap: break-word; }
   .stat.big .stat-label { font-size: 0.78rem; letter-spacing: 0.05em; }
   .stat-num { font-family: var(--display); font-weight: 700; font-size: 1.15rem; line-height: 1.1; font-variant-numeric: tabular-nums; text-align: center; }
   .stat.big .stat-num { font-size: 1.9rem; }
   .stat.zero .stat-num { color: var(--muted); }
-  @media (max-width: 560px) { .stats { grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr); max-width: none; } }
+  .ptile { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 3px 5px; display: flex; flex-direction: column; justify-content: space-between; min-width: 0; }
+  .ptile.nil { visibility: hidden; }
+  .ptile .pl { font-size: 0.62rem; font-weight: 700; color: var(--muted); line-height: 1; letter-spacing: 0.02em; }
+  .ptile .pn { font-family: var(--display); font-weight: 700; font-size: 0.95rem; line-height: 1; text-align: center; font-variant-numeric: tabular-nums; }
+  @media (max-width: 900px) {
+    .stats { flex-wrap: wrap; }
+    .stats-main { flex: 0 0 120px; }
+    .stats-grid { flex: 1 1 0; }
+    .stats-sep { flex: 0 0 100%; height: 3px; margin: 4px 0; }
+    .stats-places { flex: 1 1 100%; grid-template-columns: repeat(auto-fill, minmax(56px, 1fr)); grid-template-rows: none; grid-auto-rows: 44px; }
+    .ptile.nil { display: none; }
+  }
   .top-right { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
   .userbar { display: flex; align-items: center; gap: 6px; color: var(--muted); min-width: 0; }
   .user-email { overflow-wrap: anywhere; font-size: 0.95rem; }
@@ -476,8 +489,23 @@
     var tile = function (t, big) {
       return '<div class="stat' + (big ? ' big' : '') + (t[1] === 0 ? ' zero' : '') + '"><span class="stat-label">' + esc(t[0]) + '</span><span class="stat-num">' + t[1] + '</span></div>';
     };
+    // Stock places are letter A-L (12 columns) + number 1-4 (4 rows), e.g. A1, C3, L4.
+    var letters = 'ABCDEFGHIJKL', byPlace = {};
+    items.forEach(function (i) {
+      var m = /^([A-L])\s*-?\s*([1-4])$/i.exec(String(i.place || '').trim());
+      if (m) { var k = m[1].toUpperCase() + m[2]; byPlace[k] = (byPlace[k] || 0) + qty(i); }
+    });
+    var cells = '';
+    for (var r = 1; r <= 4; r++) {
+      for (var c = 0; c < letters.length; c++) {
+        var code = letters.charAt(c) + r, n = byPlace[code] || 0;
+        cells += '<div class="ptile' + (n > 0 ? '' : ' nil') + '"><span class="pl">' + code + '</span><span class="pn">' + n + '</span></div>';
+      }
+    }
     $('#stats').innerHTML = '<div class="stats-main">' + main.map(function (t) { return tile(t, true); }).join('') + '</div>' +
-      '<div class="stats-grid">' + grid.map(function (t) { return tile(t, false); }).join('') + '</div>';
+      '<div class="stats-grid">' + grid.map(function (t) { return tile(t, false); }).join('') + '</div>' +
+      '<div class="stats-sep" aria-hidden="true"></div>' +
+      '<div class="stats-places" aria-label="Units by stock place">' + cells + '</div>';
   }
   function fitTitles() {
     var hs = document.querySelectorAll('.card h3');

@@ -162,24 +162,19 @@
   .btn.pic { min-height: 36px; padding: 4px 14px; text-decoration: none; color: var(--ink); display: inline-flex; align-items: center; }
   .btn.pic:hover { border-color: var(--accent); color: var(--accent); }
   .stats { display: flex; align-items: stretch; gap: 8px; margin: 0; }
-  .stats-main { flex: 0 0 125px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
-  .stats-grid { flex: 0 0 240px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; min-width: 0; }
+  .stats-grid { flex: 0 0 372px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; min-width: 0; align-content: start; }
   .stats-sep { flex: 0 0 3px; background: var(--ink); border-radius: 2px; margin: 0 4px; }
   .stats-places { flex: 1 1 0; min-width: 0; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); grid-auto-rows: 35px; align-content: start; gap: 7px 5px; }
   .stat { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 6px 8px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-  .stat.big { flex: 1 1 0; justify-content: center; border-radius: 12px; padding: 10px 12px; }
   .stat-label { font-size: 0.62rem; letter-spacing: 0.03em; text-transform: uppercase; color: var(--muted); font-weight: 600; line-height: 1.2; overflow-wrap: break-word; }
-  .stat.big .stat-label { font-size: 0.78rem; letter-spacing: 0.05em; }
   .stat-num { font-family: var(--display); font-weight: 700; font-size: 1.15rem; line-height: 1.1; font-variant-numeric: tabular-nums; text-align: center; }
-  .stat.big .stat-num { font-size: 1.9rem; }
   .stat.zero .stat-num { color: var(--muted); }
   .ptile { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 3px 5px; display: flex; flex-direction: column; justify-content: space-between; min-width: 0; }
   .ptile .pl { font-size: 0.62rem; font-weight: 700; color: var(--muted); line-height: 1; letter-spacing: 0.02em; }
   .ptile .pn { font-family: var(--display); font-weight: 700; font-size: 0.95rem; line-height: 1; text-align: center; font-variant-numeric: tabular-nums; }
   @media (max-width: 900px) {
     .stats { flex-wrap: wrap; }
-    .stats-main { flex: 0 0 120px; }
-    .stats-grid { flex: 1 1 0; }
+    .stats-grid { flex: 1 1 100%; }
     .stats-sep { flex: 0 0 100%; height: 3px; margin: 4px 0; }
     .stats-places { flex: 1 1 100%; grid-template-columns: repeat(auto-fill, minmax(56px, 1fr)); grid-auto-rows: 44px; }
   }
@@ -466,24 +461,25 @@
   }
 
   var renderPending = false;
-  function norm(v) { return String(v == null ? '' : v).toLowerCase().replace(/[^a-z0-9]/g, ''); }
+  // Compare names ignoring case, spaces and punctuation; Chinese characters are kept.
+  function norm(v) { return String(v == null ? '' : v).toLowerCase().replace(/[^\p{L}\p{N}]/gu, ''); }
   function renderStats() {
     var qty = function (i) { return Number(i.qty) || 0; };
     var sum = function (fn) { return items.reduce(function (t, i) { return fn(i) ? t + qty(i) : t; }, 0); };
-    var byCat = function (c) { return sum(function (i) { return norm(i.type) === norm(c); }); };
-    var byBrand = function (b) { return sum(function (i) { return norm(i.brand) === norm(b); }); };
-    var total = sum(function () { return true; });
-    var main = [['Total units', total], ['Expressions', items.length]];
-    var grid = [
-      ['Whisky units', byCat('Whisky')],
-      ['Macallan units', byBrand('Macallan')],
-      ['Brandy units', byCat('Brandy')],
-      ['Martell units', byBrand('Martell')],
-      ['D.O.M. units', sum(function (i) { return norm(i.type) === 'dom' || norm(i.brand) === 'dom'; })],
-      ['Hennessy units', byBrand('Hennessy')]
+    // Each box adds up the units whose Category or Spirit Brand is that name.
+    var byName = function (name) {
+      var n = norm(name);
+      return sum(function (i) { return norm(i.type) === n || norm(i.brand) === n; });
+    };
+    var names = [
+      'Whisky', 'E-Whisky', 'Macallan',
+      'Brandy', 'E-Brandy', 'Martell',
+      'D.O.M.', '\u8305\u53F0-\u652F', 'Hennessy',
+      '\u767D\u9152', '\u8305\u53F0-\u7BB1', 'Wine'
     ];
-    var tile = function (t, big) {
-      return '<div class="stat' + (big ? ' big' : '') + (t[1] === 0 ? ' zero' : '') + '"><span class="stat-label">' + esc(t[0]) + '</span><span class="stat-num">' + t[1] + '</span></div>';
+    var grid = names.map(function (nm) { return [nm, byName(nm)]; });
+    var tile = function (t) {
+      return '<div class="stat' + (t[1] === 0 ? ' zero' : '') + '"><span class="stat-label">' + esc(t[0]) + '</span><span class="stat-num">' + t[1] + '</span></div>';
     };
     // Stock places are letter A-L (12 columns) + number 1-4 (4 rows), e.g. A1, C3, L4.
     var letters = 'ABCDEFGHIJKL', byPlace = {};
@@ -499,8 +495,8 @@
         if (n > 0) cells += '<div class="ptile"><span class="pl">' + code + '</span><span class="pn">' + n + '</span></div>';
       }
     }
-    $('#stats').innerHTML = '<div class="stats-main">' + main.map(function (t) { return tile(t, true); }).join('') + '</div>' +
-      '<div class="stats-grid">' + grid.map(function (t) { return tile(t, false); }).join('') + '</div>' +
+    $('#stats').innerHTML =
+      '<div class="stats-grid">' + grid.map(tile).join('') + '</div>' +
       '<div class="stats-sep" aria-hidden="true"></div>' +
       '<div class="stats-places" aria-label="Units by stock place">' + cells + '</div>';
   }

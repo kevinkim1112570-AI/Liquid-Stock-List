@@ -259,14 +259,14 @@
   <form class="sheet" id="form" novalidate>
     <h2 id="form-title">Add liquid</h2>
     <label for="f-brand">Spirit Brand <span class="req">required</span>
-      <input class="field" id="f-brand" list="dl-brands" autocomplete="off" placeholder="e.g. Castrol">
+      <input class="field" id="f-brand" list="dl-brands" autocomplete="off" placeholder="e.g. Macallan">
     </label>
     <div class="row2">
       <label for="f-range">Expression <span class="req">required</span>
-        <input class="field" id="f-range" autocomplete="off" placeholder="e.g. Edge 5W-30">
+        <input class="field" id="f-range" autocomplete="off" placeholder="e.g. 12yrs">
       </label>
       <label for="f-type">Category <span class="req">required</span>
-        <input class="field" id="f-type" list="dl-types" autocomplete="off" placeholder="e.g. Engine oil">
+        <input class="field" id="f-type" list="dl-types" autocomplete="off" placeholder="e.g. Whisky">
       </label>
     </div>
     <div class="row2">
@@ -278,14 +278,14 @@
       </label>
     </div>
     <label for="f-detail">Detail <span class="hint">Optional. Size, grade, batch, notes.</span>
-      <textarea class="field" id="f-detail" placeholder="e.g. 4 L bottle, fully synthetic"></textarea>
+      <textarea class="field" id="f-detail" placeholder="e.g. fully synthetic"></textarea>
     </label>
     <label for="f-image">Picture link <span class="hint">Optional. A web address starting with https://</span>
       <input class="field" id="f-image" type="url" inputmode="url" autocomplete="off" placeholder="https://example.com/bottle.jpg">
     </label>
     <div class="row2">
       <label for="f-place">Place of Stock <span class="hint">Optional</span>
-        <input class="field" id="f-place" list="dl-places" autocomplete="off" placeholder="e.g. Warehouse A, Shelf 2">
+        <input class="field" id="f-place" list="dl-places" autocomplete="off" placeholder="e.g. A1">
       </label>
       <label for="f-qty">Quantity <span class="req">required</span>
         <input class="field" id="f-qty" type="number" min="0" step="1" inputmode="numeric" placeholder="0">
@@ -310,7 +310,6 @@
 (function () {
   var SUPABASE_URL = 'https://gxbhnrovgtiylqsukshm.supabase.co';
   var SUPABASE_KEY = 'sb_publishable_XbUUGZiSK3Se4QaC54JE2g_eKxVrcvs';
-  var DEFAULT_TYPES = ['Engine oil', 'Coolant', 'Brake fluid', 'Transmission fluid', 'Hydraulic oil', 'Grease', 'Cleaning solvent', 'Paint thinner'];
 
   function $(s) { return document.querySelector(s); }
   function esc(s) {
@@ -450,7 +449,6 @@
   /* ---------- Rendering ---------- */
   function fillLists() {
     var brands = {}, types = {}, places = {};
-    DEFAULT_TYPES.forEach(function (t) { types[t] = 1; });
     items.forEach(function (i) { brands[i.brand] = 1; types[i.type] = 1; places[i.place] = 1; });
     var opt = function (o) { return Object.keys(o).sort().map(function (v) { return '<option value="' + esc(v) + '"></option>'; }).join(''); };
     $('#dl-brands').innerHTML = opt(brands);

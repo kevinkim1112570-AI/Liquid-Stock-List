@@ -165,7 +165,7 @@
   .stats-main { flex: 0 0 125px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
   .stats-grid { flex: 0 0 240px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; min-width: 0; }
   .stats-sep { flex: 0 0 3px; background: var(--ink); border-radius: 2px; margin: 0 4px; }
-  .stats-places { flex: 1 1 0; min-width: 0; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); grid-template-rows: repeat(4, 1fr); gap: 7px 5px; }
+  .stats-places { flex: 1 1 0; min-width: 0; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); grid-auto-rows: 35px; align-content: start; gap: 7px 5px; }
   .stat { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 6px 8px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
   .stat.big { flex: 1 1 0; justify-content: center; border-radius: 12px; padding: 10px 12px; }
   .stat-label { font-size: 0.62rem; letter-spacing: 0.03em; text-transform: uppercase; color: var(--muted); font-weight: 600; line-height: 1.2; overflow-wrap: break-word; }
@@ -174,7 +174,6 @@
   .stat.big .stat-num { font-size: 1.9rem; }
   .stat.zero .stat-num { color: var(--muted); }
   .ptile { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 3px 5px; display: flex; flex-direction: column; justify-content: space-between; min-width: 0; }
-  .ptile.nil { visibility: hidden; }
   .ptile .pl { font-size: 0.62rem; font-weight: 700; color: var(--muted); line-height: 1; letter-spacing: 0.02em; }
   .ptile .pn { font-family: var(--display); font-weight: 700; font-size: 0.95rem; line-height: 1; text-align: center; font-variant-numeric: tabular-nums; }
   @media (max-width: 900px) {
@@ -182,8 +181,7 @@
     .stats-main { flex: 0 0 120px; }
     .stats-grid { flex: 1 1 0; }
     .stats-sep { flex: 0 0 100%; height: 3px; margin: 4px 0; }
-    .stats-places { flex: 1 1 100%; grid-template-columns: repeat(auto-fill, minmax(56px, 1fr)); grid-template-rows: none; grid-auto-rows: 44px; }
-    .ptile.nil { display: none; }
+    .stats-places { flex: 1 1 100%; grid-template-columns: repeat(auto-fill, minmax(56px, 1fr)); grid-auto-rows: 44px; }
   }
   .top-right { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
   .userbar { display: flex; align-items: center; gap: 6px; color: var(--muted); min-width: 0; }
@@ -495,11 +493,12 @@
       var m = /^([A-L])\s*-?\s*([1-4])$/i.exec(String(i.place || '').trim());
       if (m) { var k = m[1].toUpperCase() + m[2]; byPlace[k] = (byPlace[k] || 0) + qty(i); }
     });
+    // Only places that hold stock are shown, in order (A1, A2, A4, B2, D3 ...), with no gaps.
     var cells = '';
-    for (var r = 1; r <= 4; r++) {
-      for (var c = 0; c < letters.length; c++) {
+    for (var c = 0; c < letters.length; c++) {
+      for (var r = 1; r <= 4; r++) {
         var code = letters.charAt(c) + r, n = byPlace[code] || 0;
-        cells += '<div class="ptile' + (n > 0 ? '' : ' nil') + '"><span class="pl">' + code + '</span><span class="pn">' + n + '</span></div>';
+        if (n > 0) cells += '<div class="ptile"><span class="pl">' + code + '</span><span class="pn">' + n + '</span></div>';
       }
     }
     $('#stats').innerHTML = '<div class="stats-main">' + main.map(function (t) { return tile(t, true); }).join('') + '</div>' +

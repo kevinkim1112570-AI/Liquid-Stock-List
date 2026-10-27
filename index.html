@@ -595,7 +595,7 @@
           '<button class="linkbtn" type="button" data-action="brand-del-ask" data-key="' + esc(g.key) + '">Delete brand</button>';
       }
       var cards = !isOpenG ? '' : '<div class="grid">' + g.list.sort(function (a, b) { return a.model.localeCompare(b.model); }).map(cardHtml).join('') + '</div>';
-      return '<section aria-label="' + esc(g.name) + '"><div class="group-head">' + head + '<div class="actions">' + actions + '</div></div>' + cards + '</section>';
+      return '<section aria-label="' + esc(g.name) + '"><div class="group-head">' + head + (isOpenG ? '<div class="actions">' + actions + '</div>' : '') + '</div>' + cards + '</section>';
     }).join('');
 
     var ri = $('#rename-input');
@@ -766,7 +766,7 @@
       confirmItem = null; render();
       write(sb.from('liquid_stock').delete().eq('id', id), 'Deleted ' + (it ? it.model : 'item'));
     }
-    else if (a === 'brand-toggle') { open[key] = !isOpen(key); render(); }
+    else if (a === 'brand-toggle') { open[key] = !isOpen(key); if (!open[key] && confirmBrand === key) confirmBrand = null; render(); }
     else if (a === 'brand-rename') { renamingKey = key; confirmBrand = null; render(); }
     else if (a === 'rename-cancel') { renamingKey = null; render(); }
     else if (a === 'rename-save') {

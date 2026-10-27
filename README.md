@@ -7,7 +7,7 @@ Each entry stores: Spirit Brand, Expression, Category, Capacity, ABV (alcohol by
 ## Features
 
 - Add a liquid with brand, expression, category, detail, place and quantity. Save stays disabled until brand, expression, category and quantity are filled in, or when the brand already has that expression
-- Cards grouped by brand. Each Spirit Brand has an arrow in front of it: click the right-pointing arrow to open the brand's cards, click the bottom-right-pointing arrow to close them. Brands start closed, and open by themselves while a search or category filter is active. Per-brand actions: add expression, rename, delete brand
+- Cards grouped by brand. Each Spirit Brand has an arrow in front of it: click the right-pointing arrow to open the brand's cards, click the bottom-right-pointing arrow to close them. Brands start closed, and open by themselves while a search or category filter is active. Per-brand actions (add expression, rename, delete brand) only show while the brand is open
 - Quantity stepper (+ / −) on every card, edit and delete per entry
 - Search and filter by category
 - Stats area under the search bar (always shown, zeros included): a 3 x 4 grid of units by name (Whisky, E-Whisky, Macallan, Brandy, E-Brandy, Martell, D.O.M., 茅台-支, Hennessy, 白酒, 茅台-箱, Wine), matched against Category or Spirit Brand. After a thick divider, the units per stock place: only places that hold stock are shown, in order (A1, A2, A4, B2, D3 ...), 12 per row, with no gaps. Stock places are read as a letter A-L plus a number 1-4

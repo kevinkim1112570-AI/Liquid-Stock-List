@@ -83,6 +83,10 @@
     padding-bottom: 12px; border-bottom: 2px solid var(--ink); margin-bottom: 16px;
   }
   .brand { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 14px; min-width: 0; }
+  .twirl { align-self: center; width: 40px; height: 40px; margin-right: -6px; padding: 0; border: 0; border-radius: 8px; background: none; color: var(--ink); display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; }
+  .twirl:hover { color: var(--accent); }
+  .twirl .tri { width: 13px; height: 13px; background: currentColor; clip-path: polygon(0 0, 100% 50%, 0 100%); }
+  .twirl[aria-expanded="true"] .tri { width: 15px; height: 15px; clip-path: polygon(100% 0, 100% 100%, 0 100%); }
   .brand h2 { font-family: var(--display); font-weight: 700; font-size: 1.75rem; line-height: 1.1; margin: 0; letter-spacing: -0.01em; overflow-wrap: anywhere; }
   .meta { color: var(--muted); font-variant-numeric: tabular-nums; }
   .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
@@ -327,7 +331,13 @@
   var loadError = '';
   var channel = null;
   var refetchTimer = null;
-  var collapsed = {};
+  // Brand groups start closed. open[key] holds a choice made with the arrow; while a search or
+  // filter is active, groups without a choice open by themselves so the matches are visible.
+  var open = {};
+  function isOpen(key) {
+    if (Object.prototype.hasOwnProperty.call(open, key)) return open[key];
+    return !!($('#q').value.trim() || $('#tf').value);
+  }
   var renamingKey = null;
   var confirmBrand = null;
   var confirmItem = null;
@@ -565,14 +575,14 @@
 
     host.innerHTML = ordered.map(function (g) {
       var qty = g.list.reduce(function (s, i) { return s + (Number(i.qty) || 0); }, 0);
-      var isCollapsed = !!collapsed[g.key];
+      var isOpenG = isOpen(g.key);
       var head;
       if (renamingKey === g.key) {
         head = '<div class="rename"><input class="field" id="rename-input" value="' + esc(g.name) + '" aria-label="Brand name">' +
           '<button class="btn primary" type="button" data-action="rename-save" data-key="' + esc(g.key) + '">Save</button>' +
           '<button class="btn" type="button" data-action="rename-cancel">Cancel</button></div>';
       } else {
-        head = '<div class="brand"><h2>' + esc(g.name) + '</h2><span class="meta">' + g.list.length + (g.list.length === 1 ? ' expression' : ' expressions') + ' · ' + qty + ' units</span></div>';
+        head = '<div class="brand"><button class="twirl" type="button" data-action="brand-toggle" data-key="' + esc(g.key) + '" aria-expanded="' + isOpenG + '" aria-label="' + (isOpenG ? 'Collapse ' : 'Expand ') + esc(g.name) + '"><span class="tri" aria-hidden="true"></span></button><h2>' + esc(g.name) + '</h2><span class="meta">' + g.list.length + (g.list.length === 1 ? ' expression' : ' expressions') + ' · ' + qty + ' units</span></div>';
       }
       var actions;
       if (confirmBrand === g.key) {
@@ -582,10 +592,9 @@
       } else {
         actions = '<button class="linkbtn add-to" type="button" data-action="add-to" data-brand="' + esc(g.name) + '">+ Add expression</button>' +
           '<button class="linkbtn" type="button" data-action="brand-rename" data-key="' + esc(g.key) + '">Rename</button>' +
-          '<button class="linkbtn" type="button" data-action="brand-del-ask" data-key="' + esc(g.key) + '">Delete brand</button>' +
-          '<button class="linkbtn" type="button" data-action="brand-toggle" data-key="' + esc(g.key) + '" aria-expanded="' + (!isCollapsed) + '">' + (isCollapsed ? 'Show' : 'Hide') + '</button>';
+          '<button class="linkbtn" type="button" data-action="brand-del-ask" data-key="' + esc(g.key) + '">Delete brand</button>';
       }
-      var cards = isCollapsed ? '' : '<div class="grid">' + g.list.sort(function (a, b) { return a.model.localeCompare(b.model); }).map(cardHtml).join('') + '</div>';
+      var cards = !isOpenG ? '' : '<div class="grid">' + g.list.sort(function (a, b) { return a.model.localeCompare(b.model); }).map(cardHtml).join('') + '</div>';
       return '<section aria-label="' + esc(g.name) + '"><div class="group-head">' + head + '<div class="actions">' + actions + '</div></div>' + cards + '</section>';
     }).join('');
 
@@ -696,7 +705,7 @@
     saving = true; updateSave();
     write(req, msg).then(function (ok) {
       saving = false; updateSave();
-      if (ok) { closeForm(); fetchAll(true); }
+      if (ok) { open[keyOf(brand)] = true; closeForm(); fetchAll(true); }
       else { $('#form-err').textContent = 'Could not save. Check your connection and try again.'; }
     });
   });
@@ -757,13 +766,14 @@
       confirmItem = null; render();
       write(sb.from('liquid_stock').delete().eq('id', id), 'Deleted ' + (it ? it.model : 'item'));
     }
-    else if (a === 'brand-toggle') { collapsed[key] = !collapsed[key]; render(); }
+    else if (a === 'brand-toggle') { open[key] = !isOpen(key); render(); }
     else if (a === 'brand-rename') { renamingKey = key; confirmBrand = null; render(); }
     else if (a === 'rename-cancel') { renamingKey = null; render(); }
     else if (a === 'rename-save') {
       var nv = $('#rename-input').value.trim();
       if (!nv) return;
       ids = items.filter(function (i) { return keyOf(i.brand) === key; }).map(function (i) { return i.id; });
+      if (Object.prototype.hasOwnProperty.call(open, key)) { open[keyOf(nv)] = open[key]; delete open[key]; }
       items.forEach(function (i) { if (keyOf(i.brand) === key) { i.brand = nv; i.sample = false; } });
       renamingKey = null; render();
       write(sb.from('liquid_stock').update({ brand: nv, is_sample: false }).in('id', ids), 'Renamed brand to ' + nv);

@@ -19,6 +19,7 @@
     --accent: #D24C06;
     --on-accent: #FFFFFF;
     --danger: #C62828;
+    --info: #1565C0;
     --on-danger: #FFFFFF;
     --display: 'Bricolage Grotesque', system-ui, -apple-system, 'Segoe UI', sans-serif;
     --body: 'Figtree', system-ui, -apple-system, 'Segoe UI', sans-serif;
@@ -26,13 +27,13 @@
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
       --bg: #17191B; --surface: #212427; --ink: #ECEDEA; --muted: #9EA3A9;
-      --line: #32363A; --chip: #2C3033; --accent: #FF7A33; --on-accent: #1A1C1E; --danger: #E5484D; --on-danger: #FFFFFF;
+      --line: #32363A; --chip: #2C3033; --accent: #FF7A33; --on-accent: #1A1C1E; --danger: #E5484D; --on-danger: #FFFFFF; --info: #3B82F6;
       color-scheme: dark;
     }
   }
   :root[data-theme="dark"] {
     --bg: #17191B; --surface: #212427; --ink: #ECEDEA; --muted: #9EA3A9;
-    --line: #32363A; --chip: #2C3033; --accent: #FF7A33; --on-accent: #1A1C1E; --danger: #E5484D; --on-danger: #FFFFFF;
+    --line: #32363A; --chip: #2C3033; --accent: #FF7A33; --on-accent: #1A1C1E; --danger: #E5484D; --on-danger: #FFFFFF; --info: #3B82F6;
     color-scheme: dark;
   }
 
@@ -86,6 +87,8 @@
   }
   .brand { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 14px; min-width: 0; }
   .warn { align-self: center; display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 7px; background: var(--danger); color: var(--on-danger); font-size: 17px; line-height: 1; font-weight: 700; flex: 0 0 auto; cursor: help; }
+  .warn.pic-warn { background: var(--info); color: #FFFFFF; font-size: 15px; margin-left: -4px; }
+  .miss.nopic { border-color: var(--info); }
   .miss { border: 2px solid var(--danger); border-radius: 6px; padding: 0 8px; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
   .twirl { align-self: center; width: 40px; height: 40px; margin-right: -6px; padding: 0; border: 0; border-radius: 8px; background: none; color: var(--ink); display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; }
   .twirl:hover { color: var(--accent); }
@@ -356,6 +359,13 @@
     catch (e) { return ''; }
   }
   function abvText(v) { return v === null || v === undefined || v === '' ? '' : (Number(v) + '%'); }
+  function noPic(i) { return !safeUrl(i.image); }
+  function titleHtml(i) {
+    var t = esc(i.model);
+    if (noPic(i)) t = '<span class="miss nopic" title="Picture link is empty">' + t + '</span>';
+    if (noPlace(i)) t = '<span class="miss" title="Place of Stock is empty">' + t + '</span>';
+    return t;
+  }
   function noPlace(i) { return !String(i.place == null ? '' : i.place).trim(); }
   function find(id) { for (var n = 0; n < items.length; n++) if (items[n].id === id) return items[n]; return null; }
 
@@ -584,6 +594,11 @@
       var warn = missing.length
         ? '<span class="warn" role="img" aria-label="Place of Stock is empty for: ' + esc(missing.map(function (i) { return i.model; }).join(', ')) + '" title="Place of Stock is empty for: ' + esc(missing.map(function (i) { return i.model; }).join(', ')) + '">\u26A0\uFE0E</span>'
         : '';
+      var nopic = items.filter(function (i) { return keyOf(i.brand) === g.key && noPic(i); });
+      if (nopic.length) {
+        var pl = esc(nopic.map(function (i) { return i.model; }).join(', '));
+        warn += '<span class="warn pic-warn" role="img" aria-label="Picture link is empty for: ' + pl + '" title="Picture link is empty for: ' + pl + '">\uD83D\uDCE5</span>';
+      }
       if (renamingKey === g.key) {
         head = '<div class="rename"><input class="field" id="rename-input" value="' + esc(g.name) + '" aria-label="Brand name">' +
           '<button class="btn primary" type="button" data-action="rename-save" data-key="' + esc(g.key) + '">Save</button>' +
@@ -614,7 +629,7 @@
       ? '<div class="confirm">Delete?<button class="linkbtn yes" type="button" data-action="del-yes" data-id="' + i.id + '">Yes</button><button class="linkbtn" type="button" data-action="del-no">No</button></div>'
       : '<button class="linkbtn" type="button" data-action="edit" data-id="' + i.id + '">Edit</button><button class="linkbtn" type="button" data-action="del-ask" data-id="' + i.id + '">Delete</button>';
     return '<article class="card">' +
-      '<div class="card-top"><h3>' + (noPlace(i) ? '<span class="miss" title="Place of Stock is empty">' + esc(i.model) + '</span>' : esc(i.model)) + '</h3><span class="chip">' + esc(i.type) + '</span></div>' +
+      '<div class="card-top"><h3>' + titleHtml(i) + '</h3><span class="chip">' + esc(i.type) + '</span></div>' +
       '<dl class="specs' + ((i.capacity || abvText(i.abv)) ? '' : ' solo') + (safeUrl(i.image) ? ' haspic' : '') + '">' +
         ((i.capacity || abvText(i.abv)) ? '<div><dt>Capacity</dt><dd>' + (esc(i.capacity) || '\u2014') + '</dd></div><div><dt>ABV</dt><dd>' + (abvText(i.abv) || '\u2014') + '</dd></div>' : '') +
         '<div class="place-cell"><dt>Place</dt><dd>' + (esc(i.place) || '\u2014') + '</dd></div>' +

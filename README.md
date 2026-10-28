@@ -11,7 +11,7 @@ Each entry stores: Spirit Brand, Expression, Category, Capacity, ABV (alcohol by
 - Missing-place warning: if any expression of a brand has no Place of Stock, a red ⚠ badge shows after the brand's "expressions · units" text (open or closed), and that expression's name is boxed in red
 - Quantity stepper (+ / −) on every card, edit and delete per entry
 - Search and filter by category
-- Stats area under the search bar (always shown, zeros included): a 3 x 4 grid of units by name (Whisky, E-Whisky, Macallan, Brandy, E-Brandy, Martell, D.O.M., 茅台-支, Hennessy, 白酒, 茅台-箱, Wine), matched against Category or Spirit Brand. After a thick divider, the units per stock place: only places that hold stock are shown, in order (A1, A2, A4, B2, D3 ...), 12 per row, with no gaps. Stock places are read as a letter A-L plus a number 1-4
+- Stats area under the search bar (always shown, zeros included): a 3 x 4 grid of units by name (Whisky, E-Whisky, Macallan, Brandy, E-Brandy, Martell, D.O.M., 茅台-支, Hennessy, 白酒, 茅台-箱, Wine), matched against Category or Spirit Brand. After a thick divider, the units per stock place: only places that hold stock are shown, in order (A1, A2, A4, B2, D3 ...), 12 per row, with no gaps. Stock places are read as a letter A-L plus a number (A1, B5, L12 ...)
 - Live data in Supabase (table `public.liquid_stock`), shared by the whole team and updated in real time
 - Team sign-in with Supabase Auth (email and password)
 

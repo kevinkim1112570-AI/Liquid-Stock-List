@@ -496,20 +496,18 @@
     var tile = function (t) {
       return '<div class="stat' + (t[1] === 0 ? ' zero' : '') + '"><span class="stat-label">' + esc(t[0]) + '</span><span class="stat-num">' + t[1] + '</span></div>';
     };
-    // Stock places are letter A-L (12 columns) + number 1-4 (4 rows), e.g. A1, C3, L4.
-    var letters = 'ABCDEFGHIJKL', byPlace = {};
+    // Stock places are a letter A-L plus a number (1, 2, 3 ... no upper limit), e.g. A1, B5, L12.
+    var byPlace = {};
     items.forEach(function (i) {
-      var m = /^([A-L])\s*-?\s*([1-4])$/i.exec(String(i.place || '').trim());
+      var m = /^([A-L])\s*-?\s*0*([1-9]\d{0,2})$/i.exec(String(i.place || '').trim());
       if (m) { var k = m[1].toUpperCase() + m[2]; byPlace[k] = (byPlace[k] || 0) + qty(i); }
     });
-    // Only places that hold stock are shown, in order (A1, A2, A4, B2, D3 ...), with no gaps.
-    var cells = '';
-    for (var c = 0; c < letters.length; c++) {
-      for (var r = 1; r <= 4; r++) {
-        var code = letters.charAt(c) + r, n = byPlace[code] || 0;
-        if (n > 0) cells += '<div class="ptile"><span class="pl">' + code + '</span><span class="pn">' + n + '</span></div>';
-      }
-    }
+    // Only places that hold stock are shown, in order (A1, A2, A5, B2, D3 ...), with no gaps.
+    var cells = Object.keys(byPlace).sort(function (x, y) {
+      return x.charCodeAt(0) - y.charCodeAt(0) || parseInt(x.slice(1), 10) - parseInt(y.slice(1), 10);
+    }).map(function (code) {
+      return '<div class="ptile"><span class="pl">' + code + '</span><span class="pn">' + byPlace[code] + '</span></div>';
+    }).join('');
     $('#stats').innerHTML =
       '<div class="stats-grid">' + grid.map(tile).join('') + '</div>' +
       '<div class="stats-sep" aria-hidden="true"></div>' +

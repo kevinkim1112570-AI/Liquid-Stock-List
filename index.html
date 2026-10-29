@@ -218,14 +218,14 @@
   <header class="top">
     <div>
       <h1>Liquid Stock List</h1>
-      <p class="totals" id="totals"></p>
+      <p class="totals" id="totals" hidden></p>
     </div>
     <div class="top-right">
       <div class="userbar" id="userbar" hidden>
         <span id="user-email" class="user-email"></span>
         <button class="linkbtn" type="button" data-action="signout">Sign out</button>
       </div>
-      <button class="btn primary" type="button" data-action="add">+ Add New</button>
+      <button class="btn primary" id="add-top" type="button" data-action="add" hidden>+ Add New</button>
     </div>
   </header>
 
@@ -418,6 +418,8 @@
     $('#auth').hidden = signedIn;
     $('#app').hidden = !signedIn;
     $('#userbar').hidden = !signedIn;
+    $('#add-top').hidden = !signedIn;
+    $('#totals').hidden = !signedIn;
     if (signedIn) {
       $('#user-email').textContent = session.user.email || '';
       subscribe();

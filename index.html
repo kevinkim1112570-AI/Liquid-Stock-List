@@ -173,7 +173,7 @@
   .btn.pic { min-height: 36px; padding: 4px 14px; text-decoration: none; color: var(--ink); display: inline-flex; align-items: center; }
   .btn.pic:hover { border-color: var(--accent); color: var(--accent); }
   .stats { display: flex; align-items: stretch; gap: 8px; margin: 0; }
-  .stats-grid { flex: 0 0 372px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; min-width: 0; align-content: start; }
+  .stats-grid { flex: 0 0 372px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: repeat(4, auto); grid-auto-flow: column; gap: 8px; min-width: 0; align-content: start; }
   .stats-sep { flex: 0 0 3px; background: var(--ink); border-radius: 2px; margin: 0 4px; }
   .stats-places { flex: 1 1 0; min-width: 0; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); grid-auto-rows: 35px; align-content: start; gap: 7px 5px; }
   .stat { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 6px 8px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
@@ -195,7 +195,7 @@
   #app { display: flex; flex-direction: column; gap: 28px; }
   .dash-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 8px 0 16px; }
   .dash-head h2 { margin: 0; font-family: var(--display); font-size: 1.6rem; }
-  .dash-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; max-width: 760px; }
+  .dash-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: repeat(4, auto); grid-auto-flow: column; gap: 14px; max-width: 760px; }
   .dash-grid label { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px; font-size: 0.9rem; color: var(--muted); }
   .dash-grid .field { font-weight: 600; }
   .dash-sub { font-family: var(--display); font-size: 1.3rem; margin: 28px 0 6px; }
@@ -204,7 +204,7 @@
   .dash-table th { width: 22%; min-width: 90px; text-align: left; font-family: var(--display); font-size: 1.05rem; overflow-wrap: anywhere; }
   .dash-table textarea { width: 100%; min-height: 56px; resize: vertical; }
   .dash-note { color: var(--muted); max-width: 760px; margin: 0 0 16px; }
-  @media (max-width: 560px) { .dash-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 560px) { .dash-grid { gap: 8px; } .dash-grid label { padding: 8px; } }
   .auth { display: flex; justify-content: center; padding-top: 12px; }
   .authcard { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 28px; width: min(460px, 100%); display: flex; flex-direction: column; gap: 16px; }
   .authcard h2 { margin: 0; font-family: var(--display); font-size: 1.6rem; line-height: 1.15; }
@@ -269,7 +269,7 @@
         <button class="btn primary" type="button" data-action="dash-save">Save</button>
       </div>
     </div>
-    <p class="dash-note">Type the Category (or Spirit Brand) each box should count. The boxes on the list page follow this order, left to right, top to bottom. Leave a box empty to show a blank box.</p>
+    <p class="dash-note">Type the Category (or Spirit Brand) each box should count. Boxes are numbered down each column: 1-4 in the first column, 5-8 in the second, 9-12 in the third. Leave a box empty to show a blank box.</p>
     <div class="dash-grid" id="dash-grid"></div>
 
     <h3 class="dash-sub">Category Description</h3>
@@ -424,7 +424,7 @@
   }
 
   /* ---------- Data ---------- */
-  var DEFAULT_TILES = ['Whisky', 'E-Whisky', 'Macallan', 'Brandy', 'E-Brandy', 'Martell', 'D.O.M.', '\u8305\u53F0-\u652F', 'Hennessy', '\u767D\u9152', '\u8305\u53F0-\u7BB1', 'Wine'];
+  var DEFAULT_TILES = ['Whisky', 'Brandy', 'D.O.M.', '\u767D\u9152', 'E-Whisky', 'E-Brandy', '\u8305\u53F0-\u652F', '\u8305\u53F0-\u7BB1', 'Macallan', 'Martell', 'Hennessy', 'Wine'];
   var tileNames = DEFAULT_TILES.slice();
   var tileDescs = DEFAULT_TILES.map(function () { return ''; });
   var PLACE_CODES = [];

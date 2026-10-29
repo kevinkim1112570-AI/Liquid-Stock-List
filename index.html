@@ -201,6 +201,7 @@
   .dash-sub { font-family: var(--display); font-size: 1.3rem; margin: 28px 0 6px; }
   .dash-table { width: 100%; max-width: 1100px; border-collapse: collapse; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; margin-bottom: 16px; }
   .dash-table th, .dash-table td { border: 1px solid var(--line); padding: 8px; vertical-align: middle; }
+  .dash-table th .field { font-weight: 700; }
   .dash-table th { width: 22%; min-width: 90px; text-align: left; font-family: var(--display); font-size: 1.05rem; overflow-wrap: anywhere; }
   .dash-table textarea { width: 100%; min-height: 56px; resize: vertical; }
   .dash-note { color: var(--muted); max-width: 760px; margin: 0 0 16px; }
@@ -277,7 +278,7 @@
     <table class="dash-table"><tbody id="dash-tiles"></tbody></table>
 
     <h3 class="dash-sub">Description of Place of Stock</h3>
-    <p class="dash-note">Where each Place of Stock is (A1 to L5, 60 places).</p>
+    <p class="dash-note">Pick the place in the left column from the places already in the list, then describe where it is. 60 rows.</p>
     <table class="dash-table"><tbody id="dash-places"></tbody></table>
   </section>
 
@@ -429,7 +430,7 @@
   var tileDescs = DEFAULT_TILES.map(function () { return ''; });
   var PLACE_CODES = [];
   'ABCDEFGHIJKL'.split('').forEach(function (l) { for (var n = 1; n <= 5; n++) PLACE_CODES.push(l + n); });
-  var placeDescs = {};
+  var placeDescs = {}, placeLabels = {};
   function fetchTiles() {
     if (!session) return;
     sb.from('liquid_stat_tiles').select('slot,name,description').order('slot', { ascending: true }).then(function (res) {
@@ -440,11 +441,11 @@
       renderStats();
       if (!$('#dash').hidden && !dashEditing()) fillDash();
     });
-    sb.from('liquid_place_notes').select('code,description').then(function (res) {
+    sb.from('liquid_place_notes').select('code,description,label').then(function (res) {
       if (res.error || !res.data) return;
-      var m = {};
-      res.data.forEach(function (r) { m[r.code] = r.description || ''; });
-      placeDescs = m;
+      var m = {}, l = {};
+      res.data.forEach(function (r) { m[r.code] = r.description || ''; l[r.code] = r.label || ''; });
+      placeDescs = m; placeLabels = l;
       if (!$('#dash').hidden && !dashEditing()) fillDash();
     });
   }
@@ -457,7 +458,7 @@
       return '<tr><th scope="row" id="dt-name-' + k + '">' + esc(n || 'Box ' + (k + 1)) + '</th><td><textarea class="field" id="dt-desc-' + k + '" rows="2" maxlength="1000" aria-labelledby="dt-name-' + k + '">' + esc(tileDescs[k]) + '</textarea></td></tr>';
     }).join('');
     $('#dash-places').innerHTML = PLACE_CODES.map(function (c) {
-      return '<tr><th scope="row" id="dp-code-' + c + '">' + c + '</th><td><textarea class="field" id="dp-desc-' + c + '" rows="2" maxlength="1000" aria-labelledby="dp-code-' + c + '">' + esc(placeDescs[c] || '') + '</textarea></td></tr>';
+      return '<tr><th scope="row"><input class="field" id="dp-label-' + c + '" list="dl-places" maxlength="100" autocomplete="off" aria-label="Place of Stock ' + (PLACE_CODES.indexOf(c) + 1) + '" value="' + esc(placeLabels[c] || '') + '"></th><td><textarea class="field" id="dp-desc-' + c + '" rows="2" maxlength="1000" aria-label="Place of Stock ' + (PLACE_CODES.indexOf(c) + 1) + ' description">' + esc(placeDescs[c] || '') + '</textarea></td></tr>';
     }).join('');
   }
   function showDash(on) {
@@ -471,7 +472,7 @@
     var rows = tileNames.map(function (_, k) {
       return { slot: k + 1, name: String($('#dash-' + k).value || '').trim(), description: String($('#dt-desc-' + k).value || '').trim() };
     });
-    var notes = PLACE_CODES.map(function (c) { return { code: c, description: String($('#dp-desc-' + c).value || '').trim() }; });
+    var notes = PLACE_CODES.map(function (c) { return { code: c, description: String($('#dp-desc-' + c).value || '').trim(), label: String($('#dp-label-' + c).value || '').trim() }; });
     Promise.all([
       sb.from('liquid_stat_tiles').upsert(rows, { onConflict: 'slot' }),
       sb.from('liquid_place_notes').upsert(notes, { onConflict: 'code' })
@@ -480,7 +481,7 @@
       if (err) { toast('Not saved: ' + err.message); return; }
       tileNames = rows.map(function (r) { return r.name; });
       tileDescs = rows.map(function (r) { return r.description; });
-      placeDescs = {}; notes.forEach(function (n) { placeDescs[n.code] = n.description; });
+      placeDescs = {}; placeLabels = {}; notes.forEach(function (n) { placeDescs[n.code] = n.description; placeLabels[n.code] = n.label; });
       renderStats();
       toast('Dashboard saved');
     });

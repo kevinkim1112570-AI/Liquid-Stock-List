@@ -14,6 +14,7 @@ Each entry stores: Spirit Brand, Expression, Category, Capacity, ABV (alcohol by
 - Search and filter by category
 - Stats area under the search bar (always shown, zeros included): a 3 x 4 grid of units by name (set on the Dashboard; boxes are numbered down each column: 1-4, 5-8, 9-12), matched against Category or Spirit Brand. After a thick divider, the units per stock place: only places that hold stock are shown, in order (A1, A2, A4, B2, D3 ...), 12 per row, with no gaps. Stock places are read as a letter A-L plus a number (A1, B5, L12 ...)
 - Dashboard page (button after + Add New, password protected): set what each of the 12 stat boxes counts. The names are saved in Supabase table `liquid_stat_tiles`, so the whole team sees the same boxes. The same page has two notes tables you fill in yourself: a Category Description (12 rows, one per stat box, table column `description` in `liquid_stat_tiles`) and a Description of Place of Stock (60 rows, table `liquid_place_notes`; the left column is a drop-down of the places already in the list). The password is checked in the page itself, so it only keeps casual users out
+- 导出 button (after Dashboard, password protected): downloads the whole list as an Excel file (.xlsx). The Excel library is loaded from a CDN only when you export. Same password caveat as the Dashboard
 - Live data in Supabase (table `public.liquid_stock`), shared by the whole team and updated in real time
 - Team sign-in with Supabase Auth (email and password)
 

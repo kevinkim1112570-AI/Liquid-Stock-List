@@ -193,6 +193,7 @@
   .userbar { display: flex; align-items: center; gap: 6px; color: var(--muted); min-width: 0; }
   .user-email { overflow-wrap: anywhere; font-size: 0.95rem; }
   #app { display: flex; flex-direction: column; gap: 28px; }
+  .btn.small { padding: 6px 12px; font-size: 0.9rem; min-height: 0; }
   .dash-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 8px 0 16px; }
   .dash-head h2 { margin: 0; font-family: var(--display); font-size: 1.6rem; }
   .dash-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: repeat(4, auto); grid-auto-flow: column; gap: 14px; max-width: 760px; }
@@ -240,6 +241,7 @@
       </div>
       <button class="btn primary" id="add-top" type="button" data-action="add" hidden>+ Add New</button>
       <button class="btn" id="dash-top" type="button" data-action="dash-open" hidden>Dashboard</button>
+      <button class="btn small" id="export-top" type="button" data-action="export-open" hidden>导出</button>
     </div>
   </header>
 
@@ -297,7 +299,7 @@
 
 <div class="overlay" id="pw-overlay" hidden>
   <form class="sheet" id="pw-form" novalidate>
-    <h2>Dashboard</h2>
+    <h2 id="pw-title">Dashboard</h2>
     <label for="pw-input">Password
       <input class="field" id="pw-input" type="password" autocomplete="off">
     </label>
@@ -465,8 +467,37 @@
     $('#dash').hidden = !on;
     $('#app').hidden = on;
     $('#dash-top').hidden = on || !session;
+    $('#export-top').hidden = on || !session;
     $('#add-top').hidden = on || !session;
     if (on) { fillDash(); window.scrollTo(0, 0); }
+  }
+  var pwFor = 'dash';
+  function loadXlsx() {
+    if (window.XLSX) return Promise.resolve();
+    return new Promise(function (resolve, reject) {
+      var sc = document.createElement('script');
+      sc.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+      sc.onload = resolve; sc.onerror = function () { reject(new Error('Could not load the Excel library. Check your connection.')); };
+      document.head.appendChild(sc);
+    });
+  }
+  function exportExcel() {
+    toast('Preparing Excel file...');
+    loadXlsx().then(function () {
+      var head = ['Spirit Brand', 'Expression', 'Category', 'Capacity', 'ABV %', 'Detail', 'Place of Stock', 'Quantity', 'Picture link', 'Note'];
+      var data = items.slice().sort(function (a, b) {
+        return String(a.brand).localeCompare(String(b.brand)) || String(a.model).localeCompare(String(b.model));
+      }).map(function (i) {
+        return [i.brand, i.model, i.type, i.capacity || '', (i.abv == null || i.abv === '') ? '' : Number(i.abv), i.detail || '', i.place || '', Number(i.qty) || 0, i.image || '', i.note || ''];
+      });
+      var ws = XLSX.utils.aoa_to_sheet([head].concat(data));
+      ws['!cols'] = [22, 26, 14, 12, 8, 30, 14, 10, 36, 30].map(function (w) { return { wch: w }; });
+      var wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Liquid Stock');
+      var d = new Date(), pad = function (n) { return (n < 10 ? '0' : '') + n; };
+      XLSX.writeFile(wb, 'Liquid-Stock-List-' + d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + '.xlsx');
+      toast('Exported ' + data.length + ' expressions');
+    }).catch(function (err) { toast(err.message); });
   }
   function saveDash() {
     var rows = tileNames.map(function (_, k) {
@@ -531,6 +562,7 @@
     $('#userbar').hidden = !signedIn;
     $('#add-top').hidden = !signedIn;
     $('#dash-top').hidden = !signedIn;
+    $('#export-top').hidden = !signedIn;
     $('#totals').hidden = !signedIn;
     if (signedIn) {
       $('#user-email').textContent = session.user.email || '';
@@ -850,7 +882,7 @@
   });
   $('#pw-form').addEventListener('submit', function (e) {
     e.preventDefault();
-    if ($('#pw-input').value === '169208') { $('#pw-overlay').hidden = true; showDash(true); }
+    if ($('#pw-input').value === '169208') { $('#pw-overlay').hidden = true; if (pwFor === 'export') exportExcel(); else showDash(true); }
     else { $('#pw-err').textContent = 'Wrong password.'; $('#pw-input').select(); }
   });
   $('#pw-overlay').addEventListener('mousedown', function (e) { if (e.target === this) this.hidden = true; });
@@ -891,7 +923,7 @@
     var key = el.getAttribute('data-key');
     var it, ids;
 
-    if (a === 'dash-open') { $('#pw-input').value = ''; $('#pw-err').textContent = ''; $('#pw-overlay').hidden = false; $('#pw-input').focus(); }
+    if (a === 'dash-open' || a === 'export-open') { pwFor = a === 'export-open' ? 'export' : 'dash'; $('#pw-title').textContent = pwFor === 'export' ? '\u5bfc\u51fa' : 'Dashboard'; $('#pw-input').value = ''; $('#pw-err').textContent = ''; $('#pw-overlay').hidden = false; $('#pw-input').focus(); }
     else if (a === 'pw-cancel') $('#pw-overlay').hidden = true;
     else if (a === 'dash-close') showDash(false);
     else if (a === 'dash-save') saveDash();

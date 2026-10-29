@@ -241,7 +241,7 @@
       </div>
       <button class="btn primary" id="add-top" type="button" data-action="add" hidden>+ Add New</button>
       <button class="btn" id="dash-top" type="button" data-action="dash-open" hidden>Dashboard</button>
-      <button class="btn small" id="export-top" type="button" data-action="export-open" hidden>导出</button>
+      <button class="btn small" id="export-top" type="button" data-action="export-open" hidden>Export</button>
     </div>
   </header>
 
@@ -923,7 +923,7 @@
     var key = el.getAttribute('data-key');
     var it, ids;
 
-    if (a === 'dash-open' || a === 'export-open') { pwFor = a === 'export-open' ? 'export' : 'dash'; $('#pw-title').textContent = pwFor === 'export' ? '\u5bfc\u51fa' : 'Dashboard'; $('#pw-input').value = ''; $('#pw-err').textContent = ''; $('#pw-overlay').hidden = false; $('#pw-input').focus(); }
+    if (a === 'dash-open' || a === 'export-open') { pwFor = a === 'export-open' ? 'export' : 'dash'; $('#pw-title').textContent = pwFor === 'export' ? 'Export' : 'Dashboard'; $('#pw-input').value = ''; $('#pw-err').textContent = ''; $('#pw-overlay').hidden = false; $('#pw-input').focus(); }
     else if (a === 'pw-cancel') $('#pw-overlay').hidden = true;
     else if (a === 'dash-close') showDash(false);
     else if (a === 'dash-save') saveDash();

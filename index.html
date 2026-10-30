@@ -200,6 +200,16 @@
     .group-head { break-after: avoid; page-break-after: avoid; }
     .grid { orphans: 1; widows: 1; }
   }
+  .rec-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; margin-bottom: 12px; }
+  .rec-table { width: 100%; border-collapse: collapse; min-width: 640px; }
+  .rec-table th, .rec-table td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .rec-table th { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); white-space: nowrap; }
+  .rec-table td:nth-child(1), .rec-table td:nth-child(3) { white-space: nowrap; }
+  .rec-table td:nth-child(2) { overflow-wrap: anywhere; }
+  .rec-table td:nth-child(4) { overflow-wrap: anywhere; min-width: 240px; }
+  .rec-table tr:last-child td { border-bottom: 0; }
+  .rec-act { display: inline-block; border-radius: 999px; padding: 2px 10px; font-weight: 700; font-size: 0.85rem; background: var(--chip); }
+  .rec-act.in { color: #1B7F3B; } .rec-act.out { color: var(--danger); } .rec-act.del { color: var(--danger); }
   .btn-stack { display: flex; flex-direction: column; gap: 4px; align-self: stretch; }
   .btn.small { padding: 0 12px; font-size: 0.85rem; min-height: 0; flex: 1 1 0; line-height: 1; }
   .dash-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 8px 0 16px; }
@@ -293,6 +303,24 @@
     <h3 class="dash-sub">Description of Place of Stock</h3>
     <p class="dash-note">Pick the place in the left column from the places already in the list, then describe where it is. 60 rows.</p>
     <table class="dash-table"><tbody id="dash-places"></tbody></table>
+  </section>
+
+  <section id="record" hidden>
+    <div class="dash-head">
+      <h2>Stock Modification Record</h2>
+      <div class="sheet-actions">
+        <button class="btn" type="button" data-action="record-close">Back to list</button>
+      </div>
+    </div>
+    <p class="dash-note">Every add, delete, stock in, stock out and edit on the list is recorded automatically. Newest first.</p>
+    <div class="rec-wrap">
+      <table class="rec-table">
+        <thead><tr><th>Date</th><th>Operator</th><th>Action</th><th>Details</th></tr></thead>
+        <tbody id="rec-body"></tbody>
+      </table>
+    </div>
+    <p class="dash-note" id="rec-status" role="status"></p>
+    <button class="btn" type="button" id="rec-more" data-action="record-more" hidden>Show more</button>
   </section>
 
   <div id="app" hidden>
@@ -480,12 +508,38 @@
     }).join('');
   }
   function showDash(on) {
+    $('#record').hidden = true;
     $('#dash').hidden = !on;
     $('#app').hidden = on;
     $('#dash-top').hidden = on || !session;
     $('#btn-stack').hidden = on || !session;
     $('#add-top').hidden = on || !session;
     if (on) { fillDash(); window.scrollTo(0, 0); }
+  }
+  /* ---------- Stock Modification Record ---------- */
+  var recLimit = 200;
+  function showRecord(on) {
+    $('#record').hidden = !on;
+    $('#dash').hidden = true;
+    $('#app').hidden = on;
+    $('#dash-top').hidden = on || !session;
+    $('#btn-stack').hidden = on || !session;
+    $('#add-top').hidden = on || !session;
+    if (on) { recLimit = 200; fetchLog(); window.scrollTo(0, 0); }
+  }
+  function fetchLog() {
+    if (!session) return;
+    sb.from('liquid_stock_log').select('op_date,actor,action,detail,created_at').order('created_at', { ascending: false }).limit(recLimit + 1).then(function (res) {
+      if (res.error) { $('#rec-status').textContent = 'Could not load the record: ' + res.error.message; return; }
+      var rows = res.data || [], more = rows.length > recLimit;
+      if (more) rows = rows.slice(0, recLimit);
+      var cls = { 'Stock In': 'in', 'Stock Out': 'out', 'Delete Product': 'del' };
+      $('#rec-body').innerHTML = rows.map(function (r) {
+        return '<tr><td>' + esc(r.op_date) + '</td><td>' + esc(r.actor) + '</td><td><span class="rec-act ' + (cls[r.action] || '') + '">' + esc(r.action) + '</span></td><td>' + esc(r.detail) + '</td></tr>';
+      }).join('');
+      $('#rec-status').textContent = rows.length ? '' : 'No changes recorded yet.';
+      $('#rec-more').hidden = !more;
+    });
   }
   var pwFor = 'dash';
   function loadXlsx() {
@@ -591,6 +645,7 @@
       .on('postgres_changes', { event: '*', schema: 'public', table: 'liquid_stock' }, scheduleRefetch)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'liquid_stat_tiles' }, fetchTiles)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'liquid_place_notes' }, fetchTiles)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'liquid_stock_log' }, function () { if (!$('#record').hidden) fetchLog(); })
       .subscribe();
   }
   function unsubscribe() {
@@ -625,6 +680,7 @@
       fetchAll();
     } else {
       $('#dash').hidden = true;
+      $('#record').hidden = true;
       unsubscribe();
       items = [];
     }
@@ -986,6 +1042,9 @@
     }
     else if (a === 'pw-cancel') $('#pw-overlay').hidden = true;
     else if (a === 'dash-close') showDash(false);
+    else if (a === 'record-open') showRecord(true);
+    else if (a === 'record-close') showRecord(false);
+    else if (a === 'record-more') { recLimit += 200; fetchLog(); }
     else if (a === 'dash-save') saveDash();
     else if (a === 'add') openForm(null, '');
     else if (a === 'add-to') openForm(null, el.getAttribute('data-brand'));

@@ -309,6 +309,7 @@
     <div class="dash-head">
       <h2>Stock Modification Record</h2>
       <div class="sheet-actions">
+        <button class="btn" type="button" data-action="record-export">Export</button>
         <button class="btn" type="button" data-action="record-close">Back to list</button>
       </div>
     </div>
@@ -540,6 +541,51 @@
       $('#rec-status').textContent = rows.length ? '' : 'No changes recorded yet.';
       $('#rec-more').hidden = !more;
     });
+  }
+  function fetchAllLog(from, acc) {
+    return sb.from('liquid_stock_log').select('op_date,actor,action,detail').order('created_at', { ascending: false }).range(from, from + 999).then(function (res) {
+      if (res.error) throw new Error(res.error.message);
+      acc = acc.concat(res.data || []);
+      return (res.data && res.data.length === 1000) ? fetchAllLog(from + 1000, acc) : acc;
+    });
+  }
+  function exportRecord() {
+    toast('Preparing Excel file...');
+    Promise.all([loadXlsx(), fetchAllLog(0, [])]).then(function (r) {
+      var rows = r[1];
+      var widths = [14, 32, 20, 90];
+      var thin = { style: 'thin', color: { argb: 'FF000000' } };
+      var border = { top: thin, left: thin, bottom: thin, right: thin };
+      var wb = new ExcelJS.Workbook();
+      var ws = wb.addWorksheet('Stock Modification Record');
+      widths.forEach(function (w, k) { ws.getColumn(k + 1).width = w; });
+      var head = ws.addRow(['Date', 'Operator', 'Action', 'Details']);
+      head.height = 28;
+      head.eachCell({ includeEmpty: true }, function (cell) {
+        cell.font = { name: 'Calibri', size: 11, bold: true };
+        cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+        cell.border = border;
+      });
+      rows.forEach(function (x) {
+        var row = ws.addRow([x.op_date, x.actor, x.action, x.detail]);
+        for (var k = 1; k <= 4; k++) {
+          var cell = row.getCell(k);
+          cell.font = { name: 'Calibri', size: 11 };
+          cell.alignment = { vertical: 'middle', horizontal: k === 4 ? 'left' : 'center', wrapText: k === 4 };
+          cell.border = border;
+        }
+      });
+      return wb.xlsx.writeBuffer().then(function (buf) {
+        var d = new Date(), pad = function (n) { return (n < 10 ? '0' : '') + n; };
+        var url = URL.createObjectURL(new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'Stock-Modification-Record-' + d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + '.xlsx';
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+        toast('Exported ' + rows.length + ' records');
+      });
+    }).catch(function (err) { toast('Export failed: ' + err.message); });
   }
   var pwFor = 'dash';
   function loadXlsx() {
@@ -1044,6 +1090,7 @@
     else if (a === 'dash-close') showDash(false);
     else if (a === 'record-open') showRecord(true);
     else if (a === 'record-close') showRecord(false);
+    else if (a === 'record-export') exportRecord();
     else if (a === 'record-more') { recLimit += 200; fetchLog(); }
     else if (a === 'dash-save') saveDash();
     else if (a === 'add') openForm(null, '');

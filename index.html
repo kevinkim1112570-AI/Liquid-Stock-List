@@ -200,6 +200,7 @@
     .group-head { break-after: avoid; page-break-after: avoid; }
     .grid { orphans: 1; widows: 1; }
   }
+  .rec-filter { max-width: 260px; margin-bottom: 12px; }
   .rec-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; margin-bottom: 12px; }
   .rec-table { width: 100%; border-collapse: collapse; min-width: 640px; }
   .rec-table th, .rec-table td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
@@ -314,6 +315,18 @@
       </div>
     </div>
     <p class="dash-note">Every add, delete, stock in, stock out and edit on the list is recorded automatically. Newest first.</p>
+    <div class="rec-filter">
+      <select class="field" id="rec-filter" aria-label="Filter by action">
+        <option value="">All actions</option>
+        <option>Add Product</option>
+        <option>Add Category</option>
+        <option>Add Place of Stock</option>
+        <option>Delete Product</option>
+        <option>Stock In</option>
+        <option>Stock Out</option>
+        <option>Edit Product</option>
+      </select>
+    </div>
     <div class="rec-wrap">
       <table class="rec-table">
         <thead><tr><th>Date</th><th>Operator</th><th>Action</th><th>Details</th></tr></thead>
@@ -526,11 +539,13 @@
     $('#dash-top').hidden = on || !session;
     $('#btn-stack').hidden = on || !session;
     $('#add-top').hidden = on || !session;
-    if (on) { recLimit = 200; fetchLog(); window.scrollTo(0, 0); }
+    if (on) { recLimit = 200; $('#rec-filter').value = ''; fetchLog(); window.scrollTo(0, 0); }
   }
   function fetchLog() {
     if (!session) return;
-    sb.from('liquid_stock_log').select('op_date,actor,action,detail,created_at').order('created_at', { ascending: false }).limit(recLimit + 1).then(function (res) {
+    var q = sb.from('liquid_stock_log').select('op_date,actor,action,detail,created_at');
+    if ($('#rec-filter').value) q = q.eq('action', $('#rec-filter').value);
+    q.order('created_at', { ascending: false }).limit(recLimit + 1).then(function (res) {
       if (res.error) { $('#rec-status').textContent = 'Could not load the record: ' + res.error.message; return; }
       var rows = res.data || [], more = rows.length > recLimit;
       if (more) rows = rows.slice(0, recLimit);
@@ -538,7 +553,7 @@
       $('#rec-body').innerHTML = rows.map(function (r) {
         return '<tr><td>' + esc(r.op_date) + '</td><td>' + esc(r.actor) + '</td><td><span class="rec-act ' + (cls[r.action] || '') + '">' + esc(r.action) + '</span></td><td>' + esc(r.detail) + '</td></tr>';
       }).join('');
-      $('#rec-status').textContent = rows.length ? '' : 'No changes recorded yet.';
+      $('#rec-status').textContent = rows.length ? '' : ($('#rec-filter').value ? 'No records for this action.' : 'No changes recorded yet.');
       $('#rec-more').hidden = !more;
     });
   }
@@ -587,6 +602,7 @@
       });
     }).catch(function (err) { toast('Export failed: ' + err.message); });
   }
+  $('#rec-filter').addEventListener('change', function () { recLimit = 200; fetchLog(); });
   var pwFor = 'dash';
   function loadXlsx() {
     if (window.ExcelJS) return Promise.resolve();

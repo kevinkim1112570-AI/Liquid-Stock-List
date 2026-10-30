@@ -525,8 +525,7 @@
   }
   function lockSignout() {
     var locked = !$('#dash').hidden || !$('#record').hidden;
-    $('#signout-btn').disabled = locked;
-    $('#signout-btn').title = locked ? 'Go back to the list to sign out' : '';
+    $('#signout-btn').hidden = locked;
   }
   function showDash(on) {
     $('#record').hidden = true;

@@ -20,6 +20,10 @@ Each entry stores: Spirit Brand, Expression, Category, Capacity, ABV (alcohol by
 - Live data in Supabase (table `public.liquid_stock`), shared by the whole team and updated in real time
 - Team sign-in with Supabase Auth (email and password)
 
+## Install as a desktop app
+
+The site has a web app manifest and icons (`manifest.json`, `icons/`). In Chrome or Edge, open the site and choose Install (Chrome: menu, Cast, save and share, Install page as app; Edge: menu, Apps, Install this site as an app) to get a desktop icon that opens the app in its own window.
+
 ## Files
 
 | File | Purpose |

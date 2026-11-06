@@ -235,10 +235,25 @@
   .auth { display: flex; justify-content: center; padding-top: 12px; }
   .authcard { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 28px; width: min(460px, 100%); display: flex; flex-direction: column; gap: 16px; }
   .authcard { gap: 14px; padding: 32px; }
+  .ro-badge { font-size: 0.8rem; font-weight: 700; padding: 2px 10px; border-radius: 999px; background: var(--chip); color: var(--muted); white-space: nowrap; }
+  .ro [data-action="add"], .ro [data-action="add-to"], .ro [data-action="brand-rename"], .ro [data-action="brand-del-ask"], .ro [data-action="edit"], .ro [data-action="del-ask"], .ro [data-action="clear-samples"], .ro [data-action="dash-save"], .ro .stepper button { display: none !important; }
+  .ro .stepper { pointer-events: none; }
+  .adm-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; margin-bottom: 12px; }
+  .adm-table { width: 100%; border-collapse: collapse; min-width: 760px; }
+  .adm-table th, .adm-table td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  .adm-table th { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); white-space: nowrap; }
+  .adm-table tr:last-child td { border-bottom: 0; }
+  .adm-table td.chk { text-align: center; } .adm-table th.chk { text-align: center; }
+  .adm-table input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--accent); }
+  .adm-table .email { overflow-wrap: anywhere; font-weight: 600; }
+  .small-row { padding: 6px 14px; min-height: 0; font-size: 0.9rem; }
+  .adm-table .acts { white-space: nowrap; }
+  .adm-table .pwdots { letter-spacing: 0.15em; color: var(--muted); }
   .auth-sub { margin: -6px 0 6px; color: var(--muted); font-size: 1.05rem; }
   .auth-hint { display: block; font-weight: 400; margin: 2px 0 6px; }
   .auth-signin { width: 100%; justify-content: center; margin-top: 6px; }
-  .auth-links { display: flex; justify-content: center; }
+  .auth-links { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; }
+  .auth-admin { justify-self: end; }
   .auth-link { color: var(--muted); font-weight: 500; }
   .authcard h2 { margin: 0; font-family: var(--display); font-size: 1.6rem; line-height: 1.15; }
   .req { font-weight: 500; font-size: 0.85rem; color: var(--accent); }
@@ -268,6 +283,7 @@
     <div class="top-right">
       <div class="userbar" id="userbar" hidden>
         <span id="user-email" class="user-email"></span>
+        <span class="ro-badge" id="ro-badge" hidden>Read only</span>
         <button class="linkbtn" type="button" id="signout-btn" data-action="signout">Sign out</button>
       </div>
       <button class="btn primary" id="add-top" type="button" data-action="add" hidden>+ Add New</button>
@@ -293,9 +309,29 @@
       <p class="info" id="auth-info" role="status"></p>
       <button class="btn primary auth-signin" type="submit" id="btn-signin">Sign in</button>
       <div class="auth-links">
+        <span></span>
         <button class="linkbtn auth-link" type="button" id="btn-signup">Create Account</button>
+        <button class="linkbtn auth-link auth-admin" type="button" id="btn-admin">Admin</button>
       </div>
     </form>
+  </section>
+
+  <section id="admin" hidden>
+    <div class="dash-head">
+      <h2>Admin</h2>
+      <div class="sheet-actions">
+        <button class="btn" type="button" data-action="admin-close">Back to login</button>
+      </div>
+    </div>
+    <p class="dash-note">Every Liquid Stock List account. Read Only can look but not change the list. Edit Access can change it. Passwords are stored encrypted, so they cannot be shown: use Edit to set a new one.</p>
+    <p class="err" id="adm-err" role="alert"></p>
+    <div class="adm-wrap">
+      <table class="adm-table">
+        <thead><tr><th>Account Email</th><th>Password</th><th class="chk">Read Only</th><th class="chk">Edit Access</th><th></th><th></th></tr></thead>
+        <tbody id="adm-body"></tbody>
+      </table>
+    </div>
+    <p class="dash-note" id="adm-status" role="status"></p>
   </section>
 
   <section id="dash" hidden>
@@ -524,13 +560,13 @@
   function dashEditing() { var a = document.activeElement; return a && a.closest && a.closest('#dash'); }
   function fillDash() {
     $('#dash-grid').innerHTML = tileNames.map(function (n, k) {
-      return '<label for="dash-' + k + '">Box ' + (k + 1) + '<input class="field" id="dash-' + k + '" maxlength="40" autocomplete="off" value="' + esc(n) + '"></label>';
+      return '<label for="dash-' + k + '">Box ' + (k + 1) + '<input class="field" id="dash-' + k + '" maxlength="40" autocomplete="off"' + (canEdit ? '' : ' readonly') + ' value="' + esc(n) + '"></label>';
     }).join('');
     $('#dash-tiles').innerHTML = tileNames.map(function (n, k) {
-      return '<tr><th scope="row" id="dt-name-' + k + '">' + esc(n || 'Box ' + (k + 1)) + '</th><td><textarea class="field" id="dt-desc-' + k + '" rows="2" maxlength="1000" aria-labelledby="dt-name-' + k + '">' + esc(tileDescs[k]) + '</textarea></td></tr>';
+      return '<tr><th scope="row" id="dt-name-' + k + '">' + esc(n || 'Box ' + (k + 1)) + '</th><td><textarea class="field" id="dt-desc-' + k + '" rows="2" maxlength="1000"' + (canEdit ? '' : ' readonly') + ' aria-labelledby="dt-name-' + k + '">' + esc(tileDescs[k]) + '</textarea></td></tr>';
     }).join('');
     $('#dash-places').innerHTML = PLACE_CODES.map(function (c) {
-      return '<tr><th scope="row"><input class="field" id="dp-label-' + c + '" list="dl-places" maxlength="100" autocomplete="off" aria-label="Place of Stock ' + (PLACE_CODES.indexOf(c) + 1) + '" value="' + esc(placeLabels[c] || '') + '"></th><td><textarea class="field" id="dp-desc-' + c + '" rows="2" maxlength="1000" aria-label="Place of Stock ' + (PLACE_CODES.indexOf(c) + 1) + ' description">' + esc(placeDescs[c] || '') + '</textarea></td></tr>';
+      return '<tr><th scope="row"><input class="field" id="dp-label-' + c + '" list="dl-places" maxlength="100" autocomplete="off"' + (canEdit ? '' : ' readonly') + ' aria-label="Place of Stock ' + (PLACE_CODES.indexOf(c) + 1) + '" value="' + esc(placeLabels[c] || '') + '"></th><td><textarea class="field" id="dp-desc-' + c + '" rows="2" maxlength="1000"' + (canEdit ? '' : ' readonly') + ' aria-label="Place of Stock ' + (PLACE_CODES.indexOf(c) + 1) + ' description">' + esc(placeDescs[c] || '') + '</textarea></td></tr>';
     }).join('');
   }
   function lockSignout() {
@@ -621,6 +657,76 @@
     }).catch(function (err) { toast('Export failed: ' + err.message); });
   }
   $('#rec-filter').addEventListener('change', function () { recLimit = 200; fetchLog(); });
+  /* ---------- Admin ---------- */
+  var ADMIN_URL = SUPABASE_URL + '/functions/v1/liquid-stock-admin';
+  var adminPw = '', adminUsers = [], admEdit = null, admDel = null;
+  function adminCall(body) {
+    body.admin_password = adminPw;
+    return fetch(ADMIN_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', apikey: SUPABASE_KEY }, body: JSON.stringify(body) })
+      .then(function (r) { return r.json().catch(function () { return { error: 'Unexpected reply from the server.' }; }).then(function (j) { j.status = r.status; return j; }); })
+      .catch(function () { return { error: 'Could not reach the server. Check your connection.', status: 0 }; });
+  }
+  function showAdmin(on) {
+    $('#admin').hidden = !on;
+    $('#auth').hidden = on || !!session;
+    if (!on) { adminPw = ''; adminUsers = []; admEdit = null; admDel = null; $('#adm-body').innerHTML = ''; }
+  }
+  function loadAdmin() {
+    $('#adm-status').textContent = 'Loading...';
+    adminCall({ action: 'list' }).then(function (j) {
+      if (j.error) { $('#adm-status').textContent = ''; $('#adm-err').textContent = j.error; return; }
+      $('#adm-err').textContent = '';
+      adminUsers = j.users || [];
+      $('#adm-status').textContent = adminUsers.length ? '' : 'No accounts yet.';
+      renderAdmin();
+    });
+  }
+  function renderAdmin() {
+    $('#adm-body').innerHTML = adminUsers.map(function (u) {
+      var ed = admEdit === u.id, id = esc(u.id);
+      var pw = ed ? '<input class="field" type="text" id="adm-pw-' + id + '" autocomplete="off" placeholder="New password (blank = keep)" aria-label="New password for ' + esc(u.email) + '">' : '<span class="pwdots" title="Passwords are stored encrypted and cannot be shown">\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022</span>';
+      var ro = '<input type="checkbox" data-adm="ro" data-id="' + id + '" aria-label="Read Only for ' + esc(u.email) + '"' + (!u.can_edit ? ' checked' : '') + (ed ? '' : ' disabled') + '>';
+      var ea = '<input type="checkbox" data-adm="ea" data-id="' + id + '" aria-label="Edit Access for ' + esc(u.email) + '"' + (u.can_edit ? ' checked' : '') + (ed ? '' : ' disabled') + '>';
+      var a1, a2;
+      if (ed) { a1 = '<button class="btn primary small-row" type="button" data-action="adm-save" data-id="' + id + '">Save</button>'; a2 = '<button class="btn small-row" type="button" data-action="adm-cancel">Cancel</button>'; }
+      else if (admDel === u.id) { a1 = '<span class="confirm">Delete this account?</span>'; a2 = '<button class="linkbtn yes" type="button" data-action="adm-del-yes" data-id="' + id + '">Yes, delete</button><button class="linkbtn" type="button" data-action="adm-del-no">No</button>'; }
+      else { a1 = '<button class="btn small-row" type="button" data-action="adm-edit" data-id="' + id + '">Edit</button>'; a2 = '<button class="btn small-row" type="button" data-action="adm-del-ask" data-id="' + id + '">Delete</button>'; }
+      return '<tr><td class="email">' + esc(u.email) + '</td><td>' + pw + '</td><td class="chk">' + ro + '</td><td class="chk">' + ea + '</td><td class="acts">' + a1 + '</td><td class="acts">' + a2 + '</td></tr>';
+    }).join('');
+  }
+  $('#adm-body').addEventListener('change', function (e) {
+    var t = e.target, kind = t.getAttribute && t.getAttribute('data-adm');
+    if (!kind) return;
+    var row = t.closest('tr'), ro = row.querySelector('[data-adm=ro]'), ea = row.querySelector('[data-adm=ea]');
+    if (kind === 'ro') { ro.checked = true; ea.checked = false; } else { ea.checked = true; ro.checked = false; }
+  });
+  function admAction(a, id) {
+    if (a === 'adm-edit') { admEdit = id; admDel = null; renderAdmin(); return; }
+    if (a === 'adm-cancel') { admEdit = null; renderAdmin(); return; }
+    if (a === 'adm-del-ask') { admDel = id; admEdit = null; renderAdmin(); return; }
+    if (a === 'adm-del-no') { admDel = null; renderAdmin(); return; }
+    if (a === 'adm-save') {
+      var row = document.querySelector('#adm-body [data-action=adm-save]').closest('tr');
+      var pw = row.querySelector('input[type=text]').value, canEditNew = row.querySelector('[data-adm=ea]').checked;
+      if (pw && pw.length < 6) { $('#adm-err').textContent = 'Password must be 6 or more characters.'; return; }
+      $('#adm-err').textContent = '';
+      adminCall({ action: 'update', id: id, new_password: pw, can_edit: canEditNew }).then(function (j) {
+        if (j.error) { $('#adm-err').textContent = j.error; return; }
+        admEdit = null; toast('Account updated'); loadAdmin();
+      });
+      return;
+    }
+    if (a === 'adm-del-yes') {
+      adminCall({ action: 'delete', id: id }).then(function (j) {
+        if (j.error) { $('#adm-err').textContent = j.error; return; }
+        admDel = null; toast('Account deleted'); loadAdmin();
+      });
+    }
+  }
+  $('#btn-admin').addEventListener('click', function () {
+    pwFor = 'admin'; $('#pw-title').textContent = 'Admin'; $('#pw-input').value = ''; $('#pw-err').textContent = '';
+    $('#pw-overlay').hidden = false; $('#pw-input').focus();
+  });
   var pwFor = 'dash';
   function loadXlsx() {
     if (window.ExcelJS) return Promise.resolve();
@@ -705,7 +811,16 @@
       toast('Dashboard saved');
     });
   }
+  function refreshRole() {
+    if (!session) return;
+    sb.from('liquid_stock_users').select('can_edit').eq('user_id', session.user.id).maybeSingle().then(function (r) {
+      if (r.error || !session) return;
+      if (!r.data) { denyMsg = 'This account no longer has access to the Liquid Stock List.'; sb.auth.signOut(); return; }
+      if (!!r.data.can_edit !== canEdit) { setRole(!!r.data.can_edit); render(); if (!$('#dash').hidden) fillDash(); }
+    });
+  }
   function fetchAll(quiet) {
+    if (quiet !== 'init') refreshRole();
     if (!session) return;
     if (!quiet) { loading = true; loadError = ''; render(); }
     sb.from('liquid_stock').select('*').order('brand', { ascending: true }).then(function (res) {
@@ -744,9 +859,30 @@
   }
 
   /* ---------- Auth ---------- */
+  var canEdit = true, denyMsg = '';
+  function setRole(v) {
+    canEdit = v;
+    document.body.classList.toggle('ro', !v);
+    $('#ro-badge').hidden = !v ? false : true;
+  }
+  function checkAccess(go) {
+    var uid = session.user.id;
+    sb.from('liquid_stock_users').select('can_edit').eq('user_id', uid).maybeSingle().then(function (r) {
+      if (!session || session.user.id !== uid) return;
+      if (r.error) { toast('Could not check your access: ' + r.error.message); return; }
+      if (!r.data) {
+        denyMsg = 'This account does not have access to the Liquid Stock List. Ask the Admin.';
+        sb.auth.signOut();
+        return;
+      }
+      setRole(!!r.data.can_edit);
+      go();
+    });
+  }
   function applySession() {
     var signedIn = !!session;
-    $('#auth').hidden = signedIn;
+    $('#auth').hidden = signedIn || !$('#admin').hidden;
+    if (signedIn) $('#admin').hidden = true;
     $('#app').hidden = !signedIn;
     $('#userbar').hidden = !signedIn;
     $('#add-top').hidden = !signedIn;
@@ -755,12 +891,12 @@
     $('#totals').hidden = !signedIn;
     if (signedIn) {
       $('#user-email').textContent = session.user.email || '';
-      subscribe();
-      fetchTiles();
-      fetchAll();
+      checkAccess(function () { subscribe(); fetchTiles(); fetchAll(); });
     } else {
+      setRole(true);
       $('#dash').hidden = true;
       $('#record').hidden = true;
+      if (denyMsg) { $('#auth-err').textContent = denyMsg; denyMsg = ''; }
       lockSignout();
       unsubscribe();
       items = [];
@@ -798,10 +934,10 @@
     $('#auth-err').textContent = ''; $('#auth-info').textContent = '';
     if (!email || pw.length < 6) { $('#auth-err').textContent = 'Enter an email and a password of 6 or more characters.'; return; }
     authBusy(true);
-    sb.auth.signUp({ email: email, password: pw }).then(function (r) {
+    sb.auth.signUp({ email: email, password: pw, options: { data: { app: 'liquid-stock' } } }).then(function (r) {
       authBusy(false);
       if (r.error) { $('#auth-err').textContent = r.error.message; return; }
-      if (!r.data.session) $('#auth-info').textContent = 'Account created. Check your email to confirm it, then sign in.';
+      if (!r.data.session) $('#auth-info').textContent = 'Account created. You can sign in now. You will have Read Only access until the Admin gives you Edit Access.';
     });
   });
 
@@ -975,7 +1111,7 @@
         '<div class="stepper"><button type="button" aria-label="Remove one from ' + esc(i.model) + '" data-action="dec" data-id="' + i.id + '">−</button>' +
         '<output>' + (Number(i.qty) || 0) + '</output>' +
         '<button type="button" aria-label="Add one to ' + esc(i.model) + '" data-action="inc" data-id="' + i.id + '">+</button></div>' +
-        '<textarea class="note-box" rows="2" maxlength="500" placeholder="Note" aria-label="Note for ' + esc(i.model) + '" data-id="' + i.id + '">' + esc(i.note) + '</textarea>' +
+        '<textarea class="note-box" rows="2" maxlength="500" placeholder="Note"' + (canEdit ? '' : ' readonly') + ' aria-label="Note for ' + esc(i.model) + '" data-id="' + i.id + '">' + esc(i.note) + '</textarea>' +
         '<div class="links">' + del + '</div>' +
       '</div></article>';
   }
@@ -1073,6 +1209,16 @@
   });
   $('#pw-form').addEventListener('submit', function (e) {
     e.preventDefault();
+    if (pwFor === 'admin') {
+      var typed = $('#pw-input').value;
+      if (!typed) { $('#pw-err').textContent = 'Enter the password.'; return; }
+      adminPw = typed;
+      adminCall({ action: 'check' }).then(function (j) {
+        if (j.error) { adminPw = ''; $('#pw-err').textContent = j.status === 401 ? 'Wrong password.' : j.error; $('#pw-input').select(); return; }
+        $('#pw-overlay').hidden = true; showAdmin(true); loadAdmin();
+      });
+      return;
+    }
     if ($('#pw-input').value === '169208') { $('#pw-overlay').hidden = true; if (pwFor === 'export') exportExcel(); else showDash(true); }
     else { $('#pw-err').textContent = 'Wrong password.'; $('#pw-input').select(); }
   });
@@ -1113,6 +1259,7 @@
     var id = el.getAttribute('data-id');
     var key = el.getAttribute('data-key');
     var it, ids;
+    if (!canEdit && /^(add|add-to|edit|dec|inc|del-yes|del-ask|brand-rename|rename-save|brand-del-ask|brand-del-yes|clear-samples|dash-save)$/.test(a)) return;
 
     if (a === 'dash-open' || a === 'export-open') { pwFor = a === 'export-open' ? 'export' : 'dash'; $('#pw-title').textContent = pwFor === 'export' ? 'Export' : 'Dashboard'; $('#pw-input').value = ''; $('#pw-err').textContent = ''; $('#pw-overlay').hidden = false; $('#pw-input').focus(); }
     else if (a === 'expand-all' || a === 'collapse-all') {
@@ -1123,6 +1270,8 @@
     }
     else if (a === 'pw-cancel') $('#pw-overlay').hidden = true;
     else if (a === 'dash-close') showDash(false);
+    else if (a === 'admin-close') showAdmin(false);
+    else if (/^adm-/.test(a)) admAction(a, id);
     else if (a === 'record-open') showRecord(true);
     else if (a === 'record-close') showRecord(false);
     else if (a === 'record-export') exportRecord();

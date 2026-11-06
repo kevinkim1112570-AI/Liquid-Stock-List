@@ -403,6 +403,16 @@
   </div>
 </div>
 
+<div class="overlay" id="ro-overlay" hidden>
+  <div class="sheet" role="alertdialog" aria-labelledby="ro-title" aria-describedby="ro-text">
+    <h2 id="ro-title">Read Only account</h2>
+    <p id="ro-text">Your account is <strong>Read Only</strong>. You can view the list, but you cannot add, edit or delete anything. Ask the Admin if you need Edit Access.</p>
+    <div class="sheet-actions">
+      <button class="btn primary" type="button" id="ro-ok">OK</button>
+    </div>
+  </div>
+</div>
+
 <div class="overlay" id="pw-overlay" hidden>
   <form class="sheet" id="pw-form" novalidate>
     <h2 id="pw-title">Dashboard</h2>
@@ -863,8 +873,15 @@
   function setRole(v) {
     canEdit = v;
     document.body.classList.toggle('ro', !v);
-    $('#ro-badge').hidden = !v ? false : true;
+    $('#ro-badge').hidden = !!v;
+    if (!v && session && roShownFor !== session.user.id) {
+      roShownFor = session.user.id;
+      $('#ro-overlay').hidden = false;
+      $('#ro-ok').focus();
+    }
   }
+  var roShownFor = '';
+  $('#ro-ok').addEventListener('click', function () { $('#ro-overlay').hidden = true; });
   function checkAccess(go) {
     var uid = session.user.id;
     sb.from('liquid_stock_users').select('can_edit').eq('user_id', uid).maybeSingle().then(function (r) {
@@ -893,6 +910,8 @@
       $('#user-email').textContent = session.user.email || '';
       checkAccess(function () { subscribe(); fetchTiles(); fetchAll(); });
     } else {
+      roShownFor = '';
+      $('#ro-overlay').hidden = true;
       setRole(true);
       $('#dash').hidden = true;
       $('#record').hidden = true;

@@ -234,6 +234,12 @@
   @media (max-width: 560px) { .dash-grid { gap: 8px; } .dash-grid label { padding: 8px; } }
   .auth { display: flex; justify-content: center; padding-top: 12px; }
   .authcard { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 28px; width: min(460px, 100%); display: flex; flex-direction: column; gap: 16px; }
+  .authcard { gap: 14px; padding: 32px; }
+  .auth-sub { margin: -6px 0 6px; color: var(--muted); font-size: 1.05rem; }
+  .auth-hint { display: block; font-weight: 400; margin: 2px 0 6px; }
+  .auth-signin { width: 100%; justify-content: center; margin-top: 6px; }
+  .auth-links { display: flex; justify-content: center; }
+  .auth-link { color: var(--muted); font-weight: 500; }
   .authcard h2 { margin: 0; font-family: var(--display); font-size: 1.6rem; line-height: 1.15; }
   .req { font-weight: 500; font-size: 0.85rem; color: var(--accent); }
   .hint { margin: 0; font-weight: 400; color: var(--muted); font-size: 0.95rem; }
@@ -275,19 +281,19 @@
 
   <section class="auth" id="auth" hidden>
     <form class="authcard" id="auth-form" novalidate>
-      <h2>Sign in to your team stock list</h2>
-      <p class="hint">Use your team email. New here? Create an account with the same fields.</p>
+      <h2>Liquid Stock List</h2>
+      <p class="auth-sub">Sign in with your team account.</p>
       <label for="a-email">Email
         <input class="field" id="a-email" type="email" autocomplete="email" placeholder="name@company.com">
       </label>
-      <label for="a-pass">Password <span class="hint">6 or more characters</span>
+      <label for="a-pass">Password <span class="hint auth-hint">6 or more characters</span>
         <input class="field" id="a-pass" type="password" autocomplete="current-password">
       </label>
       <p class="err" id="auth-err" role="alert"></p>
       <p class="info" id="auth-info" role="status"></p>
-      <div class="sheet-actions">
-        <button class="btn" type="button" id="btn-signup">Create account</button>
-        <button class="btn primary" type="submit" id="btn-signin">Sign in</button>
+      <button class="btn primary auth-signin" type="submit" id="btn-signin">Sign in</button>
+      <div class="auth-links">
+        <button class="linkbtn auth-link" type="button" id="btn-signup">Create Account</button>
       </div>
     </form>
   </section>

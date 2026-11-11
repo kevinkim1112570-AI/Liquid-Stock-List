@@ -242,8 +242,14 @@
   .dash-note { color: var(--muted); max-width: 760px; margin: 0 0 16px; }
   @media (max-width: 560px) { .dash-grid { gap: 8px; } .dash-grid label { padding: 8px; } }
   .auth { display: flex; justify-content: center; align-items: center; gap: clamp(24px, 5vw, 72px); padding-top: 12px; }
-  .auth-art { width: min(300px, 30vw); height: auto; flex: none; user-select: none; pointer-events: none; }
-  @media (max-width: 820px) { .auth-art { display: none; } }
+  .auth-bg { display: none; }
+  @media (min-width: 821px) {
+    body:has(#auth:not([hidden]) #auth-form:not([hidden])) .auth-bg {
+      display: block; position: fixed; inset: 0; z-index: -1; background: #fff url(img/login-bg.jpg) center / cover no-repeat;
+    }
+    #auth:has(#auth-form:not([hidden])) { position: fixed; inset: 0; padding: 0; align-items: center; pointer-events: none; }
+    #auth:has(#auth-form:not([hidden])) .authcard { pointer-events: auto; box-shadow: 0 18px 50px rgba(0,0,0,.16); }
+  }
   .authcard { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 28px; width: min(460px, 100%); display: flex; flex-direction: column; gap: 16px; }
   .authcard { gap: 14px; padding: 32px; }
   .ro-title { font-size: 0.3333em; color: var(--danger); font-weight: 700; margin-left: 0.7em; letter-spacing: 0; white-space: nowrap; }
@@ -293,6 +299,7 @@
 </style>
 </head>
 <body>
+<div class="auth-bg" aria-hidden="true"></div>
 <div class="wrap">
   <header class="top">
     <div>
@@ -350,7 +357,6 @@
         <button class="linkbtn auth-link" type="button" id="alt-back">Back to Sign in</button>
       </div>
     </form>
-    <img class="auth-art" src="img/bottles.png" alt="" aria-hidden="true">
   </section>
 
   <section id="admin" hidden>

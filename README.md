@@ -59,4 +59,3 @@ Open `index.html` in a browser. No build step or dependencies.
 Anyone who can create an account in this Supabase project counts as signed in. To limit it to your team, open Supabase **Authentication → Sign In / Providers** and turn off **Allow new users to sign up** once your team has accounts, or enable email confirmation. Accounts from other apps in the same project can also sign in.
 
 - Create Account box (eye button: press & hold to show password); new accounts are Read Only until Admin grants Edit Access; Read Only users see a red "(Read Only)" tag after the title.
-- Forgot Password: registered email -> emailed code (OTP) -> set new password; code is single-use.

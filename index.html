@@ -251,6 +251,7 @@
     #auth:has(#auth-form:not([hidden])) { position: fixed; inset: 0; overflow-y: auto; padding: 84px 16px 16px; align-items: flex-start; pointer-events: none; }
     #auth:has(#auth-form:not([hidden])) .authcard { pointer-events: auto; margin: auto 0; box-shadow: 0 14px 40px rgba(0,0,0,.18); }
     body:has(#auth:not([hidden]) #auth-form:not([hidden])) header.top { justify-content: center; text-align: center; column-gap: 0; }
+    body:has(#auth:not([hidden]) #auth-form:not([hidden])) header.top h1 { text-shadow: 0 0 6px #fff, 0 0 12px #fff, 0 0 18px #fff; }
   }
   @media (min-width: 821px) {
     #auth:has(#alt-form:not([hidden])) { gap: clamp(24px, 5vw, 72px); }

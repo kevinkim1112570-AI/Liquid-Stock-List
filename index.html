@@ -243,6 +243,12 @@
   @media (max-width: 560px) { .dash-grid { gap: 8px; } .dash-grid label { padding: 8px; } }
   .auth { display: flex; justify-content: center; align-items: center; gap: clamp(24px, 5vw, 72px); padding-top: 12px; }
   .auth-bg { display: none; }
+  .auth-art { display: none; }
+  @media (min-width: 821px) {
+    #auth:has(#alt-form:not([hidden])) { gap: clamp(24px, 5vw, 72px); }
+    #auth:has(#alt-form:not([hidden])) .auth-art { display: block; width: min(300px, 30vw); height: auto; flex: none; user-select: none; pointer-events: none; align-self: center; }
+    body:has(#auth:not([hidden]) #auth-form:not([hidden])) header.top { justify-content: center; text-align: center; column-gap: 0; }
+  }
   @media (min-width: 821px) {
     body:has(#auth:not([hidden]) #auth-form:not([hidden])) .auth-bg {
       display: block; position: fixed; inset: 0; z-index: -1; background: #fff url(img/login-bg.jpg) center / cover no-repeat;
@@ -357,6 +363,7 @@
         <button class="linkbtn auth-link" type="button" id="alt-back">Back to Sign in</button>
       </div>
     </form>
+    <img class="auth-art" src="img/bottles.png" alt="" aria-hidden="true">
   </section>
 
   <section id="admin" hidden>

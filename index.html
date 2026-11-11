@@ -206,7 +206,7 @@
   @media print {
     html, body { height: auto !important; min-height: 0 !important; background: #fff; }
     .wrap { padding-bottom: 0; margin-bottom: 0; }
-    .toolbar, .top-right > :not(.userbar), #signout-btn, .ro-badge, .listbar, #toast, .overlay,
+    .toolbar, .top-right > :not(.userbar), #signout-btn, .listbar, #toast, .overlay,
     [data-action="edit"], [data-action="del-ask"], .group-head .actions { display: none !important; }
     .userbar { display: block !important; }
     .userbar[hidden] { display: none !important; }
@@ -244,6 +244,7 @@
   .auth { display: flex; justify-content: center; padding-top: 12px; }
   .authcard { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 28px; width: min(460px, 100%); display: flex; flex-direction: column; gap: 16px; }
   .authcard { gap: 14px; padding: 32px; }
+  .ro-title { font-size: 0.3333em; color: var(--danger); font-weight: 700; margin-left: 0.7em; letter-spacing: 0; white-space: nowrap; }
   .ro-badge { font-size: 0.8rem; font-weight: 700; padding: 2px 10px; border-radius: 999px; background: var(--chip); color: var(--muted); white-space: nowrap; }
   .ro [data-action="add"], .ro [data-action="add-to"], .ro [data-action="brand-rename"], .ro [data-action="brand-del-ask"], .ro [data-action="edit"], .ro [data-action="del-ask"], .ro [data-action="clear-samples"], .ro [data-action="dash-save"], .ro .stepper button { display: none !important; }
   .ro .stepper { pointer-events: none; }
@@ -258,11 +259,18 @@
   .small-row { padding: 6px 14px; min-height: 0; font-size: 0.9rem; }
   .adm-table .acts { white-space: nowrap; }
   .adm-table .pwdots { letter-spacing: 0.15em; color: var(--muted); }
+  .pwrow { position: relative; display: block; }
+  .pwrow .field { padding-right: 52px; }
+  .eye { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 40px; height: 36px; display: inline-flex; align-items: center; justify-content: center; background: none; border: 0; border-radius: 8px; color: var(--muted); cursor: pointer; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+  .eye:hover, .eye.on { color: var(--ink); background: var(--chip); }
+  .auth-links.back-only { display: flex; justify-content: center; }
   .auth-sub { margin: -6px 0 6px; color: var(--muted); font-size: 1.05rem; }
   .auth-hint { display: block; font-weight: 400; margin: 2px 0 6px; }
   .auth-signin { width: 100%; justify-content: center; margin-top: 6px; }
   .auth-links { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; }
   .auth-admin { justify-self: end; }
+  .auth-link.auth-forgot { justify-self: start; font-size: 0.75rem; }
+  .auth-link { font-size: 1rem; }
   .auth-link { color: var(--muted); font-weight: 500; }
   .authcard h2 { margin: 0; font-family: var(--display); font-size: 1.6rem; line-height: 1.15; }
   .req { font-weight: 500; font-size: 0.85rem; color: var(--accent); }
@@ -286,13 +294,12 @@
 <div class="wrap">
   <header class="top">
     <div>
-      <h1>Liquid Stock List</h1>
+      <h1>Liquid Stock List<span class="ro-title" id="ro-title" hidden>(Read Only)</span></h1>
       <p class="totals" id="totals" hidden></p>
     </div>
     <div class="top-right">
       <div class="userbar" id="userbar" hidden>
         <span id="user-email" class="user-email"></span><span class="print-stamp" id="print-stamp"></span>
-        <span class="ro-badge" id="ro-badge" hidden>Read only</span>
         <button class="linkbtn" type="button" id="signout-btn" data-action="signout">Sign out</button>
       </div>
       <button class="btn primary" id="add-top" type="button" data-action="add" hidden>+ Add New</button>
@@ -318,9 +325,31 @@
       <p class="info" id="auth-info" role="status"></p>
       <button class="btn primary auth-signin" type="submit" id="btn-signin">Sign in</button>
       <div class="auth-links">
-        <span></span>
+        <button class="linkbtn auth-link auth-forgot" type="button" id="btn-forgot">Forgot Password</button>
         <button class="linkbtn auth-link" type="button" id="btn-signup">Create Account</button>
         <button class="linkbtn auth-link auth-admin" type="button" id="btn-admin">Admin</button>
+      </div>
+    </form>
+    <form class="authcard" id="alt-form" novalidate hidden>
+      <h2 id="alt-title">Create Account</h2>
+      <p class="auth-sub" id="alt-sub"></p>
+      <label for="alt-email">Email
+        <input class="field" id="alt-email" type="email" autocomplete="email">
+      </label>
+      <label for="alt-otp" id="alt-otp-row" hidden>OTP <span class="hint auth-hint">From the email we sent you</span>
+        <input class="field" id="alt-otp" maxlength="12" autocomplete="one-time-code" autocapitalize="off" spellcheck="false">
+      </label>
+      <label for="alt-pass" id="alt-pass-label">Password <span class="hint auth-hint">6 or more characters</span>
+        <span class="pwrow"><input class="field" id="alt-pass" type="password" autocomplete="new-password"><button class="eye" type="button" data-eye="alt-pass" aria-label="Press and hold to show the password"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.5 12S5.5 5 12 5s10.5 7 10.5 7-4 7-10.5 7S1.5 12 1.5 12z"/><circle cx="12" cy="12" r="3.2"/></svg></button></span>
+      </label>
+      <label for="alt-pass2">Confirm password
+        <span class="pwrow"><input class="field" id="alt-pass2" type="password" autocomplete="new-password"><button class="eye" type="button" data-eye="alt-pass2" aria-label="Press and hold to show the password"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.5 12S5.5 5 12 5s10.5 7 10.5 7-4 7-10.5 7S1.5 12 1.5 12z"/><circle cx="12" cy="12" r="3.2"/></svg></button></span>
+      </label>
+      <p class="err" id="alt-err" role="alert"></p>
+      <p class="info" id="alt-info" role="status"></p>
+      <button class="btn primary auth-signin" type="submit" id="alt-submit">Create Account</button>
+      <div class="auth-links back-only">
+        <button class="linkbtn auth-link" type="button" id="alt-back">Back to Sign in</button>
       </div>
     </form>
   </section>
@@ -410,6 +439,20 @@
   <div id="notice"></div>
   <main class="groups" id="groups"></main>
   </div>
+</div>
+
+<div class="overlay" id="fg-overlay" hidden>
+  <form class="sheet" id="fg-form" novalidate>
+    <h2>Forgot Password</h2>
+    <label for="fg-email">Email
+      <input class="field" id="fg-email" type="email" autocomplete="email" placeholder="The email you registered with">
+    </label>
+    <p class="err" id="fg-err" role="alert"></p>
+    <div class="sheet-actions">
+      <button class="btn" type="button" id="fg-cancel">Cancel</button>
+      <button class="btn primary" type="submit" id="fg-ok">OK</button>
+    </div>
+  </form>
 </div>
 
 <div class="overlay" id="ro-overlay" hidden>
@@ -882,7 +925,7 @@
   function setRole(v) {
     canEdit = v;
     document.body.classList.toggle('ro', !v);
-    $('#ro-badge').hidden = !!v;
+    $('#ro-title').hidden = !!v;
     if (!v && session && roShownFor !== session.user.id) {
       roShownFor = session.user.id;
       $('#ro-overlay').hidden = false;
@@ -930,6 +973,7 @@
       setRole(true);
       $('#dash').hidden = true;
       $('#record').hidden = true;
+      $('#alt-form').hidden = true; $('#auth-form').hidden = false;
       if (denyMsg) { $('#auth-err').textContent = denyMsg; denyMsg = ''; }
       lockSignout();
       unsubscribe();
@@ -941,8 +985,10 @@
     applySession();
   });
   sb.auth.onAuthStateChange(function (event, s) {
+    var skip = resetting;
     // Defer so no database call runs inside the auth callback.
     setTimeout(function () {
+      if (skip || resetting) return;
       var changed = (!!s) !== (!!session) || (s && session && s.user.id !== session.user.id);
       session = s;
       if (changed) applySession();
@@ -963,17 +1009,104 @@
       if (r.error) $('#auth-err').textContent = r.error.message;
     });
   });
-  $('#btn-signup').addEventListener('click', function () {
-    var email = $('#a-email').value.trim(), pw = $('#a-pass').value;
-    $('#auth-err').textContent = ''; $('#auth-info').textContent = '';
-    if (!email || pw.length < 6) { $('#auth-err').textContent = 'Enter an email and a password of 6 or more characters.'; return; }
-    authBusy(true);
-    sb.auth.signUp({ email: email, password: pw, options: { data: { app: 'liquid-stock' } } }).then(function (r) {
-      authBusy(false);
-      if (r.error) { $('#auth-err').textContent = r.error.message; return; }
-      if (!r.data.session) $('#auth-info').textContent = 'Account created. You can sign in now. You will have Read Only access until the Admin gives you Edit Access.';
+  /* ---------- Create account / Forgot password ---------- */
+  var resetting = false, altMode = 'signup';
+  var AUTH_URL = SUPABASE_URL + '/functions/v1/liquid-stock-auth';
+  function showAlt(mode, email) {
+    altMode = mode;
+    $('#auth-form').hidden = true; $('#alt-form').hidden = false;
+    var reset = mode === 'reset';
+    $('#alt-title').textContent = reset ? 'Reset Password' : 'Create Account';
+    $('#alt-sub').textContent = reset
+      ? 'We sent an OTP to your email. Enter it, then choose a new password.'
+      : 'Create an account. Check your email to confirm it. Your account is Read Only until the Admin gives you Edit Access.';
+    $('#alt-email').value = email || ''; $('#alt-email').readOnly = reset;
+    $('#alt-otp-row').hidden = !reset; $('#alt-otp').value = '';
+    $('#alt-pass-label').firstChild.textContent = reset ? 'New password ' : 'Password ';
+    $('#alt-pass').value = ''; $('#alt-pass2').value = '';
+    $('#alt-err').textContent = ''; $('#alt-info').textContent = '';
+    $('#alt-submit').textContent = reset ? 'Reset Password' : 'Create Account';
+    (reset ? $('#alt-otp') : $('#alt-email')).focus();
+  }
+  function showLogin(info, email) {
+    $('#alt-form').hidden = true; $('#auth-form').hidden = false;
+    $('#auth-err').textContent = ''; $('#auth-info').textContent = info || '';
+    if (email) $('#a-email').value = email;
+    $('#a-pass').value = '';
+  }
+  $('#btn-signup').addEventListener('click', function () { showAlt('signup', $('#a-email').value.trim()); });
+  $('#alt-back').addEventListener('click', function () { showLogin(''); });
+  function altBusy(on) { $('#alt-submit').disabled = on; }
+  $('#alt-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var email = $('#alt-email').value.trim(), pw = $('#alt-pass').value, pw2 = $('#alt-pass2').value, err = $('#alt-err');
+    err.textContent = '';
+    if (!email) { err.textContent = 'Enter your email.'; return; }
+    if (altMode === 'reset' && !$('#alt-otp').value.trim()) { err.textContent = 'Enter the OTP from the email.'; return; }
+    if (pw.length < 6) { err.textContent = 'The password needs 6 or more characters.'; return; }
+    if (pw !== pw2) { err.textContent = 'The two passwords are not the same.'; return; }
+    altBusy(true);
+    if (altMode === 'signup') {
+      sb.auth.signUp({ email: email, password: pw, options: { data: { app: 'liquid-stock' } } }).then(function (r) {
+        altBusy(false);
+        if (r.error) { err.textContent = r.error.message; return; }
+        showLogin('Account created. Open the email we sent you and confirm it, then sign in. Your account is Read Only until the Admin gives you Edit Access.', email);
+      });
+      return;
+    }
+    // Reset: the OTP signs in for a moment, the new password is saved, then we sign out again.
+    resetting = true;
+    var fail = function (msg) {
+      sb.auth.signOut().then(function () { resetting = false; session = null; altBusy(false); err.textContent = msg; });
+    };
+    sb.auth.verifyOtp({ email: email, token: $('#alt-otp').value.trim(), type: 'recovery' }).then(function (r) {
+      if (r.error || !r.data || !r.data.session) { resetting = false; altBusy(false); err.textContent = 'The OTP is wrong or has expired.'; return; }
+      sb.auth.updateUser({ password: pw }).then(function (u) {
+        if (u.error) { fail(u.error.message); return; }
+        sb.auth.signOut().then(function () {
+          resetting = false; session = null; altBusy(false);
+          showLogin('Your password was changed. Sign in with the new password.', email);
+        });
+      });
     });
   });
+
+  $('#btn-forgot').addEventListener('click', function () {
+    $('#fg-email').value = $('#a-email').value.trim(); $('#fg-err').textContent = '';
+    $('#fg-overlay').hidden = false; $('#fg-email').focus();
+  });
+  $('#fg-cancel').addEventListener('click', function () { $('#fg-overlay').hidden = true; });
+  $('#fg-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var email = $('#fg-email').value.trim(), err = $('#fg-err');
+    err.textContent = '';
+    if (!email) { err.textContent = 'Enter your email.'; return; }
+    $('#fg-ok').disabled = true;
+    fetch(AUTH_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', apikey: SUPABASE_KEY }, body: JSON.stringify({ action: 'email-exists', email: email }) })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        if (j.error) throw new Error(j.error);
+        if (!j.exists) { $('#fg-ok').disabled = false; err.textContent = 'This email is not a registered account.'; return; }
+        return sb.auth.resetPasswordForEmail(email).then(function (r) {
+          $('#fg-ok').disabled = false;
+          if (r.error) { err.textContent = r.error.message; return; }
+          $('#fg-overlay').hidden = true;
+          showAlt('reset', email);
+        });
+      })
+      .catch(function (x) { $('#fg-ok').disabled = false; err.textContent = x.message || 'Could not reach the server. Check your connection.'; });
+  });
+
+  /* Press and hold the eye to see the password. */
+  function eyeShow(btn) { var inp = document.getElementById(btn.getAttribute('data-eye')); if (inp) { inp.type = 'text'; btn.classList.add('on'); } }
+  function eyeHideAll() { document.querySelectorAll('[data-eye]').forEach(function (b) { var inp = document.getElementById(b.getAttribute('data-eye')); if (inp) inp.type = 'password'; b.classList.remove('on'); }); }
+  document.addEventListener('pointerdown', function (e) { var b = e.target.closest && e.target.closest('[data-eye]'); if (b) { e.preventDefault(); eyeShow(b); } });
+  ['pointerup', 'pointercancel'].forEach(function (t) { document.addEventListener(t, eyeHideAll); });
+  document.addEventListener('pointerout', function (e) { var b = e.target.closest && e.target.closest('[data-eye]'); if (b && !(e.relatedTarget && b.contains(e.relatedTarget))) eyeHideAll(); });
+  window.addEventListener('blur', eyeHideAll);
+  document.addEventListener('contextmenu', function (e) { if (e.target.closest && e.target.closest('[data-eye]')) e.preventDefault(); });
+  document.addEventListener('keydown', function (e) { var b = e.target.closest && e.target.closest('[data-eye]'); if (b && (e.key === ' ' || e.key === 'Enter')) { e.preventDefault(); eyeShow(b); } });
+  document.addEventListener('keyup', function (e) { if (e.target.closest && e.target.closest('[data-eye]')) eyeHideAll(); });
 
   /* ---------- Rendering ---------- */
   function fillLists() {

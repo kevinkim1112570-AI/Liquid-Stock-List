@@ -199,7 +199,8 @@
   .userbar { display: flex; align-items: center; gap: 6px; color: var(--muted); min-width: 0; }
   .user-email { overflow-wrap: anywhere; font-size: 0.95rem; }
   #app { display: flex; flex-direction: column; gap: 28px; }
-  .listbar { display: flex; gap: 18px; margin-top: 22px; padding: 0 2px; }
+  .found { margin-left: auto; align-self: center; color: var(--muted); font-size: 1.05rem; font-variant-numeric: tabular-nums; text-align: right; }
+  .listbar { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 18px; margin-top: 22px; padding: 0 2px; }
   .listrule { border: 0; border-top: 4px solid var(--ink); margin: 8px 0 4px; }
   .print-stamp { display: none; }
   @page { size: A4 landscape; margin: 10mm; }
@@ -455,6 +456,7 @@
   <div class="listbar">
     <button class="linkbtn" type="button" data-action="expand-all">Expand All</button>
     <button class="linkbtn" type="button" data-action="collapse-all">Collapse All</button>
+    <span class="found" id="found" hidden></span>
   </div>
   <hr class="listrule">
   <div id="notice"></div>
@@ -1151,6 +1153,7 @@
       return;
     }
 
+    $('#found').hidden = true;
     var q = $('#q').value.trim().toLowerCase();
     var tf = $('#tf').value;
     var filtered = items.filter(function (i) {
@@ -1158,6 +1161,15 @@
       if (!q) return true;
       return [i.brand, i.model, i.type, i.detail, i.place, i.capacity, abvText(i.abv), i.note].join(' ').toLowerCase().indexOf(q) >= 0;
     });
+
+    (function () {
+      var f = $('#found');
+      if (!q && !tf) { f.hidden = true; return; }
+      var bs = {}; filtered.forEach(function (i) { bs[keyOf(i.brand)] = 1; });
+      var b = Object.keys(bs).length, e = filtered.length, u = filtered.reduce(function (t, i) { return t + (Number(i.qty) || 0); }, 0);
+      f.textContent = 'Found: ' + b + (b === 1 ? ' brand' : ' brands') + ' \u00B7 ' + e + (e === 1 ? ' expression' : ' expressions') + ' \u00B7 ' + u + (u === 1 ? ' unit' : ' units');
+      f.hidden = false;
+    })();
 
     if (!items.length) {
       host.innerHTML = '<div class="empty"><p>No liquids listed yet. Add your first brand and expression.</p><button class="btn primary" type="button" data-action="add">+ Add New</button></div>';
